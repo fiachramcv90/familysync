@@ -1,93 +1,55 @@
 {
-  "name": "familysync-database",
-  "version": "1.0.0",
-  "description": "Database schema and models for FamilySync application",
-  "main": "src/types/index.ts",
+  "name": "familysync",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:database": "jest __tests__/database/",
-    "test:types": "jest __tests__/types/",
-    "test:migrations": "jest __tests__/migrations/",
-    "migrate:up": "cd supabase && ./migrate.sh up",
-    "migrate:down": "cd supabase && ./migrate.sh down",
-    "migrate:status": "cd supabase && ./migrate.sh status",
-    "migrate:reset": "cd supabase && ./migrate.sh reset",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src __tests__ --ext .ts,.tsx",
-    "lint:fix": "eslint src __tests__ --ext .ts,.tsx --fix",
-    "validate": "npm run typecheck && npm run lint && npm run test"
-  },
-  "keywords": [
-    "database",
-    "schema",
-    "typescript",
-    "supabase",
-    "family-coordination"
-  ],
-  "author": "FamilySync Development Team",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.1.12",
-    "@types/uuid": "^9.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "dotenv": "^17.2.1",
-    "eslint": "^8.45.0",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.2.0"
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0",
-    "uuid": "^9.0.0",
-    "zod": "^3.22.0"
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.56.1",
+    "@tanstack/react-query": "^5.85.6",
+    "bcryptjs": "^3.0.2",
+    "clsx": "^2.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^15.5.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.62.0",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.5",
+    "zustand": "^5.0.8"
   },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/src",
-      "<rootDir>/__tests__"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.test.ts"
-    ],
-    "transform": {
-      "^.+\\.ts$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "src/**/*.ts",
-      "!src/**/*.d.ts",
-      "!src/types/index.ts"
-    ],
-    "coverageDirectory": "coverage",
-    "coverageReporters": [
-      "text",
-      "lcov",
-      "html"
-    ],
-    "setupFilesAfterEnv": [
-      "<rootDir>/__tests__/setup.ts"
-    ],
-    "testTimeout": 30000
-  },
-  "eslintConfig": {
-    "extends": [
-      "@typescript-eslint/recommended"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "ecmaVersion": 2020,
-      "sourceType": "module"
-    },
-    "rules": {
-      "@typescript-eslint/no-unused-vars": "error",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/explicit-function-return-type": "off"
-    }
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.55.0",
+    "@tailwindcss/postcss": "^4.1.12",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.3.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.34.0",
+    "eslint-config-next": "^15.5.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.9.2"
   }
 }

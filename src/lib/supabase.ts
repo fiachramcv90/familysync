@@ -1,78 +1,47 @@
 // Supabase client configuration for FamilySync application
-// Story 1.3: Database Schema and Models
+// Story 1.3: Database Schema and Models integrated with main application
 
-import { createClient } from '@supabase/supabase-js';
-// Note: Database type will be defined here since it's not exported from types
+import { createBrowserClient } from '@supabase/ssr'
+import type { Database } from './database.types'
 
-// Environment variables configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+export function createClient() {
+  return createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    }
+  )
 }
 
-// Create Supabase client with type safety
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
+// Legacy support - export a default client instance for compatibility
+export const supabase = createClient()
+
+// Test connection function from Story 1.1
+export const testSupabaseConnection = async () => {
+  try {
+    const client = createClient()
+    const { error } = await client.from('families').select('count').limit(1)
+    if (error) throw error
+    return { success: true, message: 'Supabase connection successful' }
+  } catch (error) {
+    return { 
+      success: false, 
+      message: `Supabase connection failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }
   }
-});
+}
 
-// Database type definitions for Supabase client
-export type Database = {
-  public: {
-    Tables: {
-      families: {
-        Row: import('../types/database').FamilyRecord;
-        Insert: import('../types/database').FamilyInsert;
-        Update: import('../types/database').FamilyUpdate;
-      };
-      family_members: {
-        Row: import('../types/database').FamilyMemberRecord;
-        Insert: import('../types/database').FamilyMemberInsert;
-        Update: import('../types/database').FamilyMemberUpdate;
-      };
-      tasks: {
-        Row: import('../types/database').TaskRecord;
-        Insert: import('../types/database').TaskInsert;
-        Update: import('../types/database').TaskUpdate;
-      };
-      events: {
-        Row: import('../types/database').EventRecord;
-        Insert: import('../types/database').EventInsert;
-        Update: import('../types/database').EventUpdate;
-      };
-      sync_logs: {
-        Row: import('../types/database').SyncLogRecord;
-        Insert: import('../types/database').SyncLogInsert;
-        Update: never; // Sync logs are immutable except for conflict resolution
-      };
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-    Enums: {
-      role: 'admin' | 'member';
-      task_status: 'pending' | 'in_progress' | 'completed';
-      event_status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-      priority: 'low' | 'medium' | 'high';
-      sync_operation: 'INSERT' | 'UPDATE' | 'DELETE';
-    };
-  };
-};
-
-// Utility functions for common database operations
+// Database utilities for common operations (Story 1.3)
 export const db = {
   // Family operations
   families: {
@@ -92,7 +61,7 @@ export const db = {
         .single();
     },
     
-    async create(family: import('../types/database').FamilyInsert) {
+    async create(family: any) {
       return supabase
         .from('families')
         .insert(family)
@@ -100,7 +69,7 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: import('../types/database').FamilyUpdate) {
+    async update(id: string, updates: any) {
       return supabase
         .from('families')
         .update(updates)
@@ -137,7 +106,7 @@ export const db = {
         .single();
     },
     
-    async create(member: import('../types/database').FamilyMemberInsert) {
+    async create(member: any) {
       return supabase
         .from('family_members')
         .insert(member)
@@ -145,7 +114,7 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: import('../types/database').FamilyMemberUpdate) {
+    async update(id: string, updates: any) {
       return supabase
         .from('family_members')
         .update(updates)
@@ -157,7 +126,7 @@ export const db = {
 
   // Task operations
   tasks: {
-    async getByFamilyId(familyId: string, filters?: import('../types/database').TaskFilters) {
+    async getByFamilyId(familyId: string, filters?: any) {
       let query = supabase
         .from('tasks')
         .select(`
@@ -202,7 +171,7 @@ export const db = {
         .single();
     },
     
-    async create(task: import('../types/database').TaskInsert) {
+    async create(task: any) {
       return supabase
         .from('tasks')
         .insert(task)
@@ -210,7 +179,7 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: import('../types/database').TaskUpdate) {
+    async update(id: string, updates: any) {
       return supabase
         .from('tasks')
         .update(updates)
@@ -229,7 +198,7 @@ export const db = {
 
   // Event operations
   events: {
-    async getByFamilyId(familyId: string, filters?: import('../types/database').EventFilters) {
+    async getByFamilyId(familyId: string, filters?: any) {
       let query = supabase
         .from('events')
         .select(`
@@ -274,7 +243,7 @@ export const db = {
         .single();
     },
     
-    async create(event: import('../types/database').EventInsert) {
+    async create(event: any) {
       return supabase
         .from('events')
         .insert(event)
@@ -282,7 +251,7 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: import('../types/database').EventUpdate) {
+    async update(id: string, updates: any) {
       return supabase
         .from('events')
         .update(updates)
@@ -295,34 +264,6 @@ export const db = {
       return supabase
         .from('events')
         .delete()
-        .eq('id', id);
-    }
-  },
-
-  // Sync log operations
-  syncLogs: {
-    async getByFamilyId(familyId: string, limit = 100) {
-      return supabase
-        .from('sync_logs')
-        .select('*')
-        .eq('family_id', familyId)
-        .order('sync_timestamp', { ascending: false })
-        .limit(limit);
-    },
-    
-    async getConflicts(familyId: string) {
-      return supabase
-        .from('sync_logs')
-        .select('*')
-        .eq('family_id', familyId)
-        .eq('conflict_resolved', false)
-        .order('sync_timestamp', { ascending: false });
-    },
-    
-    async resolveConflict(id: string) {
-      return supabase
-        .from('sync_logs')
-        .update({ conflict_resolved: true })
         .eq('id', id);
     }
   }
@@ -396,43 +337,6 @@ export const subscriptions = {
         callback
       )
       .subscribe();
-  }
-};
-
-// Auth helpers
-export const auth = {
-  async signUp(email: string, password: string, metadata?: any) {
-    return supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: metadata
-      }
-    });
-  },
-
-  async signIn(email: string, password: string) {
-    return supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-  },
-
-  async signOut() {
-    return supabase.auth.signOut();
-  },
-
-  async getCurrentUser() {
-    return supabase.auth.getUser();
-  },
-
-  async getCurrentSession() {
-    return supabase.auth.getSession();
-  },
-
-  // Subscribe to auth state changes
-  onAuthStateChange(callback: (event: string, session: any) => void) {
-    return supabase.auth.onAuthStateChange(callback);
   }
 };
 
