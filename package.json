@@ -1,0 +1,93 @@
+{
+  "name": "familysync-database",
+  "version": "1.0.0",
+  "description": "Database schema and models for FamilySync application",
+  "main": "src/types/index.ts",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:database": "jest __tests__/database/",
+    "test:types": "jest __tests__/types/",
+    "test:migrations": "jest __tests__/migrations/",
+    "migrate:up": "cd supabase && ./migrate.sh up",
+    "migrate:down": "cd supabase && ./migrate.sh down",
+    "migrate:status": "cd supabase && ./migrate.sh status",
+    "migrate:reset": "cd supabase && ./migrate.sh reset",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src __tests__ --ext .ts,.tsx",
+    "lint:fix": "eslint src __tests__ --ext .ts,.tsx --fix",
+    "validate": "npm run typecheck && npm run lint && npm run test"
+  },
+  "keywords": [
+    "database",
+    "schema",
+    "typescript",
+    "supabase",
+    "family-coordination"
+  ],
+  "author": "FamilySync Development Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.1.12",
+    "@types/uuid": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "dotenv": "^17.2.1",
+    "eslint": "^8.45.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "uuid": "^9.0.0",
+    "zod": "^3.22.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/__tests__"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/types/index.ts"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/__tests__/setup.ts"
+    ],
+    "testTimeout": 30000
+  },
+  "eslintConfig": {
+    "extends": [
+      "@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "ecmaVersion": 2020,
+      "sourceType": "module"
+    },
+    "rules": {
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off"
+    }
+  }
+}
