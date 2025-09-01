@@ -1,0 +1,112 @@
+import { createClient } from './supabase'
+
+export interface AuthUser {
+  id: string
+  email: string
+  familyId?: string
+  role?: 'admin' | 'member'
+}
+
+export interface SignUpData {
+  email: string
+  password: string
+  name: string
+  familyName?: string
+}
+
+export interface SignInData {
+  email: string
+  password: string
+}
+
+export class AuthService {
+  static async signUp(data: SignUpData) {
+    const supabase = createClient()
+    
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          name: data.name,
+        }
+      }
+    })
+
+    if (authError) {
+      throw new Error(authError.message)
+    }
+
+    return authData
+  }
+
+  static async signIn(data: SignInData) {
+    const supabase = createClient()
+    
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return authData
+  }
+
+  static async signOut() {
+    const supabase = createClient()
+    const { error } = await supabase.auth.signOut()
+    
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+
+  static async getSession() {
+    const supabase = createClient()
+    const { data: { session }, error } = await supabase.auth.getSession()
+    
+    if (error) {
+      throw new Error(error.message)
+    }
+    
+    return session
+  }
+
+
+  static async refreshToken() {
+    const supabase = createClient()
+    const { data, error } = await supabase.auth.refreshSession()
+    
+    if (error) {
+      throw new Error(error.message)
+    }
+    
+    return data.session
+  }
+
+  static async updatePassword(newPassword: string) {
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+    
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+
+  static async resetPassword(email: string) {
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+    
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+}
+
