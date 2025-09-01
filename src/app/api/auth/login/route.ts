@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
       {
         message: 'Login successful',
         user: {
+          ...profile,
           id: authData.user.id,
-          email: authData.user.email,
-          ...profile
+          email: authData.user.email
         },
         session: {
           access_token: authData.session.access_token,

@@ -4,11 +4,12 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { User, Session } from '@supabase/supabase-js'
+import { UserProfile } from '@/types/auth'
 
 interface AuthContextType {
   user: User | null
   session: Session | null
-  profile: any | null
+  profile: UserProfile | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, name: string, familyName?: string) => Promise<void>
@@ -21,7 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<any | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session) {
           setSession(session)
           setUser(session.user)
-          await fetchProfile(session.user.id)
+          await fetchProfile()
         }
       } catch (error) {
         console.error('Session check error:', error)
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session) {
           setSession(session)
           setUser(session.user)
-          await fetchProfile(session.user.id)
+          await fetchProfile()
         } else {
           setSession(null)
           setUser(null)
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase])
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async () => {
     try {
       const response = await fetch('/api/auth/profile')
       if (response.ok) {

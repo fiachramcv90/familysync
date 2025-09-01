@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from './supabase-server'
 
 export interface AuthenticatedRequest extends NextRequest {
-  user?: any
+  user?: { id: string; email: string; role: string }
   familyId?: string
 }
 
@@ -39,7 +39,11 @@ export async function withAuth(
 
       // Add user and family info to request
       const authenticatedReq = req as AuthenticatedRequest
-      authenticatedReq.user = { ...user, role: member.role }
+      authenticatedReq.user = { 
+        id: user.id, 
+        email: user.email ?? '', 
+        role: member.role 
+      }
       authenticatedReq.familyId = member.family_id
 
       return handler(authenticatedReq)

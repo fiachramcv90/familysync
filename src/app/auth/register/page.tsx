@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
-import { validatePassword } from '@/lib/auth'
+import { validatePassword } from '@/lib/validation'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -50,8 +50,8 @@ export default function RegisterPage() {
 
     try {
       await signUp(email, password, name, familyName)
-    } catch (err: any) {
-      setErrors([err.message || 'Registration failed'])
+    } catch (err: unknown) {
+      setErrors([err instanceof Error ? err.message : 'Registration failed'])
     } finally {
       setLoading(false)
     }

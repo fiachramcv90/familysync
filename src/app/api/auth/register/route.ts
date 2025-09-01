@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase-server'
-import { validatePassword } from '@/lib/auth'
+import { createServiceRoleClient } from '@/lib/supabase-server'
+import { validatePassword } from '@/lib/validation'
 
 const AVATAR_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',

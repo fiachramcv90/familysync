@@ -1,4 +1,4 @@
-import { validatePassword, PASSWORD_REQUIREMENTS } from '@/lib/auth'
+import { validatePassword, PASSWORD_REQUIREMENTS } from '@/lib/validation'
 
 describe('Auth Service', () => {
   describe('validatePassword', () => {

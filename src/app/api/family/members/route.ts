@@ -1,13 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { withFamilyIsolation, AuthenticatedRequest } from '@/lib/api-middleware'
+import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
-export const GET = withFamilyIsolation(async (req: AuthenticatedRequest) => {
+export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
     
-    // Query is automatically scoped to user's family via RLS
-    // But we also explicitly filter by familyId for extra safety
+    // Get current user first
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get user's family membership
+    const { data: member, error: memberError } = await supabase
+      .from('family_members')
+      .select('family_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (memberError || !member) {
+      return NextResponse.json(
+        { error: 'No family membership found' },
+        { status: 403 }
+      )
+    }
+    
+    // Query family members
     const { data: members, error } = await supabase
       .from('family_members')
       .select(`
@@ -18,14 +40,15 @@ export const GET = withFamilyIsolation(async (req: AuthenticatedRequest) => {
         avatar_color,
         is_active,
         created_at,
+        updated_at,
         last_seen_at
       `)
-      .eq('family_id', req.familyId!)
+      .eq('family_id', member.family_id)
       .eq('is_active', true)
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Failed to fetch family members:', error)
+      console.error('Family members query error:', error)
       return NextResponse.json(
         { error: 'Failed to fetch family members' },
         { status: 500 }
@@ -40,4 +63,4 @@ export const GET = withFamilyIsolation(async (req: AuthenticatedRequest) => {
       { status: 500 }
     )
   }
-})
+}

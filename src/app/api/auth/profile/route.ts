@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
     
@@ -119,7 +119,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Build update object
-    const updates: any = {}
+    const updates: Record<string, string> = {}
     if (name) updates.name = name
     if (email) updates.email = email
     updates.updated_at = new Date().toISOString()
