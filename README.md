@@ -1,4 +1,4 @@
-# FamilySync
+# FamilySync 
 
 A family coordination PWA built with Next.js, TypeScript, and Supabase.
 
