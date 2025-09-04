@@ -50,10 +50,8 @@ To enable automatic deployments, you need to configure the following secrets in 
 
 ### Required Secrets Checklist:
 - [ ] `VERCEL_TOKEN` - Your personal Vercel token
-- [ ] `VERCEL_ORG_ID` - Your Vercel organization ID
-- [ ] `VERCEL_PROJECT_ID` - Your specific project ID
-- [ ] `TURBO_TOKEN` (optional) - For build caching
-- [ ] `TURBO_TEAM` (optional) - Your team slug
+- [ ] `VERCEL_ORG_ID` - Set to: `team_N1dYKZlb2bxkiIDTb2ZkwXaz`
+- [ ] `VERCEL_PROJECT_ID` - Set to: `prj_dax9EmyjRjOxDva4gMfvLEGBy37o`
 
 ## Environment Variables in Vercel
 

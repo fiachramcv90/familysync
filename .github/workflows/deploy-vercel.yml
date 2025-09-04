@@ -8,39 +8,29 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  deploy-preview:
+  deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
         with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Deploy to Vercel (Preview)
-        run: |
-          vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --yes > deployment-url.txt
-          echo "DEPLOYMENT_URL=$(cat deployment-url.txt)" >> $GITHUB_ENV
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: ${{ github.event_name == 'push' && '--prod' || '' }}
+          working-directory: ./
 
       - name: Comment PR with deployment URL
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const deploymentUrl = process.env.DEPLOYMENT_URL;
+            const deploymentUrl = '${{ steps.deploy.outputs.preview-url }}';
             const comment = `### 🚀 Preview Deployment Ready!\n\n🔗 **Preview URL**: ${deploymentUrl}\n\nThis preview will be updated automatically on new commits.`;
             
             // Check for existing deployment comment
@@ -73,36 +63,13 @@ jobs:
               });
             }
 
-  deploy-production:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Deploy to Vercel (Production)
-        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
-
       - name: Create GitHub Deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const deploymentUrl = '${{ steps.deploy.outputs.preview-url }}';
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -118,6 +85,6 @@ jobs:
               repo: context.repo.repo,
               deployment_id: deployment.data.id,
               state: 'success',
-              environment_url: 'https://familysync.vercel.app', // Update with your actual domain
+              environment_url: deploymentUrl,
               description: 'Deployed to Vercel Production'
             });
