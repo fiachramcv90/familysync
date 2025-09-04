@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { PWAInstaller } from '@/components/PWAInstaller'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { QueryProvider } from '@/components/providers/QueryProvider'
 
 export const metadata: Metadata = {
   title: 'FamilySync - Family Coordination Made Simple',
@@ -41,16 +42,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-background font-sans antialiased">
-        <AuthProvider>
-          <div className="flex min-h-screen flex-col">
-            <PWAInstaller />
-            <Header />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </div>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <div className="flex min-h-screen flex-col">
+              <PWAInstaller />
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )

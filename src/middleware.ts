@@ -64,52 +64,59 @@ export async function middleware(request: NextRequest) {
     )
   }
 
-  // Create Supabase client for auth check
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
+  // Skip Supabase auth check if we don't have real credentials (development mode)
+  const hasValidSupabaseConfig = process.env.NEXT_PUBLIC_SUPABASE_URL && 
+                                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+                                 !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
+
+  if (hasValidSupabaseConfig) {
+    // Create Supabase client for auth check
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+              response.cookies.set(name, value, options)
+            })
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value)
-            response.cookies.set(name, value, options)
-          })
-        },
-      },
+      }
+    )
+
+    // Check authentication for protected routes
+    const protectedPaths = ['/dashboard', '/profile', '/settings', '/family']
+    const isProtectedPath = protectedPaths.some(path => 
+      request.nextUrl.pathname.startsWith(path)
+    )
+
+    if (isProtectedPath) {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        const redirectUrl = new URL('/auth/login', request.url)
+        redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
     }
-  )
 
-  // Check authentication for protected routes
-  const protectedPaths = ['/dashboard', '/profile', '/settings', '/family']
-  const isProtectedPath = protectedPaths.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  )
+    // Redirect authenticated users away from auth pages
+    const authPaths = ['/auth/login', '/auth/register']
+    const isAuthPath = authPaths.some(path => 
+      request.nextUrl.pathname === path
+    )
 
-  if (isProtectedPath) {
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (!session) {
-      const redirectUrl = new URL('/auth/login', request.url)
-      redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
-  }
-
-  // Redirect authenticated users away from auth pages
-  const authPaths = ['/auth/login', '/auth/register']
-  const isAuthPath = authPaths.some(path => 
-    request.nextUrl.pathname === path
-  )
-
-  if (isAuthPath) {
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (session) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (isAuthPath) {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
     }
   }
 
