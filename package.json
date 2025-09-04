@@ -7,12 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "ci:test": "npm run type-check && npm run lint && npm run test:coverage",
+    "ci:build": "npm run build"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.10.0",
@@ -53,6 +58,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "lightningcss": "^1.30.1",
     "postcss": "^8.5.6",
+    "prettier": "^3.3.0",
     "tailwindcss": "^4.1.12",
     "typescript": "^5.9.2"
   }

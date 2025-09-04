@@ -1,6 +1,7 @@
 // useCreateTask Hook Tests
 // Story 2.1: Task Creation and Basic Management
 
+import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCreateTask } from '@/hooks/useCreateTask';
