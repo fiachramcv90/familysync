@@ -9,6 +9,7 @@ import { EmptyWeekState, LoadingState, ErrorState } from '@/components/calendar/
 import { FamilyMemberAvatar } from '@/components/family/FamilyMemberAvatar';
 import { QuickAddModal } from '@/components/task/QuickAddModal';
 import { FloatingActionButton } from '@/components/ui/Button';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
@@ -37,7 +38,8 @@ export default function Dashboard() {
   const isFirstTime = !hasAnyTasks && weekData?.summary.totalEvents === 0;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-start justify-between mb-4">
@@ -223,6 +225,7 @@ export default function Dashboard() {
         onClose={() => setShowQuickAdd(false)}
         defaultAssigneeId={selectedMemberId}
       />
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
