@@ -1,0 +1,177 @@
+'use client';
+
+import { WeekNavigation } from '@/components/calendar/WeekNavigation';
+import { WeekView, WeekSummary, FamilyWorkload } from '@/components/calendar/WeekView';
+import { EmptyWeekState, LoadingState, ErrorState } from '@/components/calendar/EmptyWeekState';
+import { useWeekNavigation } from '@/hooks/useWeekNavigation';
+import { useSelectedFamilyMember } from '@/stores/app-store';
+import { useState, useEffect } from 'react';
+import { clsx } from 'clsx';
+
+export default function Dashboard() {
+  const { weekData, isLoading, isCurrentWeek } = useWeekNavigation();
+  const selectedMemberId = useSelectedFamilyMember();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
+
+  // Check if week has any tasks
+  const hasAnyTasks = weekData?.summary.totalTasks > 0;
+  const isFirstTime = !hasAnyTasks && isCurrentWeek; // Assume first time if current week is empty
+
+  // Filter data by selected member
+  const filteredWeekData = weekData && selectedMemberId ? {
+    ...weekData,
+    days: weekData.days.map(day => ({
+      ...day,
+      tasks: day.tasks.filter(task => task.assigneeId === selectedMemberId),
+      events: day.events.filter(event => event.assigneeId === selectedMemberId),
+      taskCount: day.tasks.filter(task => task.assigneeId === selectedMemberId).length,
+      eventCount: day.events.filter(event => event.assigneeId === selectedMemberId).length,
+      completedTaskCount: day.tasks.filter(task => 
+        task.assigneeId === selectedMemberId && task.status === 'completed'
+      ).length,
+      overdueTaskCount: day.tasks.filter(task => 
+        task.assigneeId === selectedMemberId && 
+        task.dueDate && 
+        task.dueDate < new Date() && 
+        task.status !== 'completed'
+      ).length,
+    }))
+  } : weekData;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <LoadingState message="Loading your family dashboard..." />
+      </div>
+    );
+  }
+
+  if (!weekData) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <ErrorState 
+          message="Failed to load dashboard data" 
+          onRetry={() => window.location.reload()} 
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Family Dashboard</h1>
+            <p className="text-gray-600">Your family&apos;s coordination hub</p>
+          </div>
+          
+          {/* Family member filter - desktop only */}
+          {!isMobile && weekData.members.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Filter by:</span>
+              <select
+                value={selectedMemberId || ''}
+                onChange={(e) => {
+                  // TODO: Implement member filtering
+                  console.log('Filter by member:', e.target.value);
+                }}
+                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All family members</option>
+                {weekData.members.map((member) => (
+                  <option key={member.memberId} value={member.memberId}>
+                    {member.memberName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Week Navigation */}
+        <WeekNavigation 
+          className="mb-6" 
+          showCurrentWeekButton={!isCurrentWeek} 
+        />
+      </div>
+
+      {/* Main Content */}
+      {!hasAnyTasks ? (
+        <EmptyWeekState isFirstTime={isFirstTime} />
+      ) : (
+        <div className="space-y-6">
+          {/* Summary cards for desktop */}
+          {!isMobile && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <WeekSummary />
+              </div>
+              <div>
+                <FamilyWorkload />
+              </div>
+            </div>
+          )}
+
+          {/* Weekly calendar view */}
+          <div className={clsx(
+            'bg-white rounded-lg border shadow-sm overflow-hidden',
+            isMobile ? 'p-4' : 'h-[600px]'
+          )}>
+            <WeekView 
+              isMobile={isMobile}
+              showSummary={!isMobile}
+              className={isMobile ? '' : 'h-full'}
+            />
+          </div>
+
+          {/* Mobile summary cards */}
+          {isMobile && (
+            <div className="space-y-4">
+              <WeekSummary />
+              <FamilyWorkload />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick actions - floating button on mobile */}
+      {isMobile && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => {
+              // TODO: Open quick add modal
+              console.log('Open quick add modal');
+            }}
+            className={clsx(
+              'w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg',
+              'hover:bg-blue-700 active:bg-blue-800 transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+              'flex items-center justify-center'
+            )}
+            aria-label="Add task or event"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
