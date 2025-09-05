@@ -316,6 +316,30 @@ export const createEventInputSchema = z.object({
   path: ['endDateTime']
 });
 
+export const updateTaskInputSchema = z.object({
+  title: z.string().min(1).max(200).trim().optional(),
+  description: z.string().max(1000).nullish(),
+  assigneeId: uuidSchema.optional(),
+  dueDate: z.union([z.string().datetime(), z.date()]).nullish(),
+  completedAt: z.union([z.string().datetime(), z.date()]).nullish(),
+  status: z.enum(['pending', 'in_progress', 'completed']).optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  version: z.number().int().nonnegative().optional() // For optimistic locking
+}).refine((data) => {
+  // If status is completed, completedAt should be provided or will be auto-set
+  if (data.status === 'completed' && data.completedAt === null) {
+    return false;
+  }
+  // If status is not completed, completedAt should be null
+  if (data.status && data.status !== 'completed' && data.completedAt) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Completion status and timestamp must be consistent',
+  path: ['completedAt']
+});
+
 // Validation error handling utilities
 export type ValidationResult<T> = {
   success: true;
@@ -377,6 +401,7 @@ export const validators = {
     createFamily: createFamilyInputSchema,
     joinFamily: joinFamilyInputSchema,
     createTask: createTaskInputSchema,
+    updateTask: updateTaskInputSchema,
     createEvent: createEventInputSchema
   }
 };

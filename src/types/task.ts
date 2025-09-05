@@ -67,12 +67,14 @@ export interface CreateTaskInput {
 
 export interface UpdateTaskInput {
   title?: string;
-  description?: string;
+  description?: string | null;
   assigneeId?: string;
   dueDate?: Date | string | null;
+  completedAt?: Date | string | null;
   status?: TaskStatus;
   priority?: Priority;
   category?: 'task' | 'event';
+  version?: number;
 }
 
 // Event creation and update interfaces
