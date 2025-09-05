@@ -12,7 +12,7 @@ import { FloatingActionButton } from '@/components/ui/Button';
 
 export default function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
-  const { weekData, isLoading, weekTitle } = useWeekNavigation();
+  const { weekData, isLoading } = useWeekNavigation();
   const selectedMemberId = useSelectedFamilyMember();
   const showQuickAdd = useShowQuickAdd();
   const { setSelectedFamilyMember } = useFilterActions();
@@ -33,7 +33,7 @@ export default function Dashboard() {
   }, []);
 
   // Check if we have tasks to determine empty state
-  const hasAnyTasks = weekData?.summary.totalTasks > 0;
+  const hasAnyTasks = (weekData?.summary?.totalTasks ?? 0) > 0;
   const isFirstTime = !hasAnyTasks && weekData?.summary.totalEvents === 0;
 
   return (
@@ -95,7 +95,13 @@ export default function Dashboard() {
                       id: member.memberId,
                       name: member.memberName,
                       avatarColor: member.avatarColor,
-                      role: 'member', // We don't have role info in the member summary
+                      role: 'member' as const,
+                      familyId: '', // Not needed for display
+                      email: '', // Not needed for display
+                      isActive: true,
+                      createdAt: new Date(),
+                      updatedAt: new Date(),
+                      lastSeenAt: new Date(),
                     }}
                     size="sm"
                   />
@@ -179,7 +185,13 @@ export default function Dashboard() {
                             id: member.memberId,
                             name: member.memberName,
                             avatarColor: member.avatarColor,
-                            role: 'member',
+                            role: 'member' as const,
+                            familyId: '', // Not needed for display
+                            email: '', // Not needed for display
+                            isActive: true,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                            lastSeenAt: new Date(),
                           }}
                           size="sm"
                         />

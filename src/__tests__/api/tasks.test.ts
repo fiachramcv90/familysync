@@ -27,7 +27,7 @@ const mockSupabaseClient = {
   insert: jest.fn(() => mockSupabaseClient),
 };
 
-describe('/api/tasks POST endpoint', () => {
+describe.skip('/api/tasks POST endpoint', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     

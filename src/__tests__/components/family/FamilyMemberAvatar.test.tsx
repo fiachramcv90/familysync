@@ -134,7 +134,9 @@ describe('FamilyMemberAvatar', () => {
     render(<FamilyMemberAvatar member={mockMember} onClick={mockOnClick} />);
     
     const avatar = screen.getByText('JD').parentElement;
-    fireEvent.click(avatar);
+    if (avatar) {
+      fireEvent.click(avatar);
+    }
     
     expect(mockOnClick).toHaveBeenCalledTimes(1);
   });
@@ -146,11 +148,15 @@ describe('FamilyMemberAvatar', () => {
     const avatar = screen.getByText('JD').parentElement;
     
     // Test Enter key
-    fireEvent.keyDown(avatar, { key: 'Enter' });
+    if (avatar) {
+      fireEvent.keyDown(avatar, { key: 'Enter' });
+    }
     expect(mockOnClick).toHaveBeenCalledTimes(1);
     
     // Test Space key
-    fireEvent.keyDown(avatar, { key: ' ' });
+    if (avatar) {
+      fireEvent.keyDown(avatar, { key: ' ' });
+    }
     expect(mockOnClick).toHaveBeenCalledTimes(2);
   });
 

@@ -179,11 +179,11 @@ export type {
   Priority,
   Role,
   
-  // Input types
-  TaskInsert as CreateTaskInput,
-  TaskUpdate as UpdateTaskInput,
-  EventInsert as CreateEventInput,
-  EventUpdate as UpdateEventInput,
+  // Database Input types (keep original names to avoid confusion)
+  TaskInsert,
+  TaskUpdate,
+  EventInsert,
+  EventUpdate,
   FamilyInsert as CreateFamilyInput,
   FamilyUpdate as UpdateFamilyInput
 } from './database';
@@ -197,5 +197,11 @@ export type {
 // Re-export domain types from task.ts
 export type { 
   Task,
-  Event
+  Event,
+  CreateTaskInput,
+  UpdateTaskInput,
+  CreateEventInput,
+  UpdateEventInput,
+  WeeklyTaskView,
+  WeeklyDashboardData
 } from './task';

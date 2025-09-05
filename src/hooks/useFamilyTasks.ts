@@ -3,7 +3,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
-import { Task, WeeklyDashboardData, WeeklyTaskView, UpdateTaskInput, CreateTaskInput } from '@/types/task';
+import { Task, Event, WeeklyDashboardData, WeeklyTaskView, UpdateTaskInput, CreateTaskInput } from '@/types/task';
 import { FamilyMember } from '@/types/family';
 
 // Mock data for development until backend is ready
@@ -66,24 +66,6 @@ const mockTasks: Task[] = [
     createdBy: mockFamilyMembers[1],
   },
   {
-    id: '2',
-    familyId: 'family-1',
-    title: 'Soccer practice',
-    description: 'Team practice at the park',
-    assigneeId: '3',
-    createdById: '1',
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    completedAt: null,
-    status: 'pending',
-    category: 'event',
-    priority: 'medium',
-    syncVersion: 1,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    assignee: mockFamilyMembers[2],
-    createdBy: mockFamilyMembers[0],
-  },
-  {
     id: '3',
     familyId: 'family-1',
     title: 'Clean garage',
@@ -103,6 +85,26 @@ const mockTasks: Task[] = [
   },
 ];
 
+const mockEvents: Event[] = [
+  {
+    id: '2',
+    familyId: 'family-1',
+    title: 'Soccer practice',
+    description: 'Team practice at the park',
+    assigneeId: '3',
+    createdById: '1',
+    startDateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+    endDateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // 2 hours later
+    location: 'Community Park',
+    status: 'scheduled',
+    syncVersion: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    assignee: mockFamilyMembers[2],
+    createdBy: mockFamilyMembers[0],
+  },
+];
+
 // Task service mock (will be replaced with real API calls)
 const taskService = {
   async getTasksForWeek(weekStart: Date): Promise<WeeklyDashboardData> {
@@ -117,6 +119,7 @@ const taskService = {
       const currentDate = new Date(weekStart);
       currentDate.setDate(weekStart.getDate() + i);
       
+      // Filter tasks for this day
       const dayTasks = mockTasks.filter(task => {
         if (!task.dueDate) return false;
         const taskDate = format(task.dueDate, 'yyyy-MM-dd');
@@ -124,63 +127,77 @@ const taskService = {
         return taskDate === currentDateStr;
       });
 
-      const events = dayTasks.filter(task => task.category === 'event');
-      const tasks = dayTasks.filter(task => task.category === 'task');
+      // Filter events for this day
+      const dayEvents = mockEvents.filter(event => {
+        const eventDate = format(event.startDateTime, 'yyyy-MM-dd');
+        const currentDateStr = format(currentDate, 'yyyy-MM-dd');
+        return eventDate === currentDateStr;
+      });
 
       days.push({
         date: format(currentDate, 'yyyy-MM-dd'),
         dayName: format(currentDate, 'EEEE'),
-        tasks,
-        events,
-        taskCount: tasks.length,
-        eventCount: events.length,
-        completedTaskCount: tasks.filter(t => t.status === 'completed').length,
-        overdueTaskCount: tasks.filter(t => 
+        tasks: dayTasks,
+        events: dayEvents,
+        taskCount: dayTasks.length,
+        eventCount: dayEvents.length,
+        completedTaskCount: dayTasks.filter(t => t.status === 'completed').length,
+        overdueTaskCount: dayTasks.filter(t => 
           t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
         ).length,
       });
     }
 
     const allTasks = mockTasks;
+    const allEvents = mockEvents;
     const completedTasks = allTasks.filter(t => t.status === 'completed');
+    const completedEvents = allEvents.filter(e => e.status === 'completed');
     const overdueTasks = allTasks.filter(t => 
       t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
     );
+
+    const totalItems = allTasks.length + allEvents.length;
+    const completedItems = completedTasks.length + completedEvents.length;
 
     return {
       weekStartDate: format(weekStart, 'yyyy-MM-dd'),
       weekEndDate: format(weekEnd, 'yyyy-MM-dd'),
       days,
       summary: {
-        totalTasks: allTasks.filter(t => t.category === 'task').length,
-        completedTasks: completedTasks.filter(t => t.category === 'task').length,
-        overdueTasks: overdueTasks.filter(t => t.category === 'task').length,
-        pendingTasks: allTasks.filter(t => t.status === 'pending' && t.category === 'task').length,
-        totalEvents: allTasks.filter(t => t.category === 'event').length,
-        completedEvents: completedTasks.filter(t => t.category === 'event').length,
-        upcomingEvents: allTasks.filter(t => 
-          t.category === 'event' && t.dueDate && t.dueDate > new Date()
+        totalTasks: allTasks.length,
+        completedTasks: completedTasks.length,
+        overdueTasks: overdueTasks.length,
+        pendingTasks: allTasks.filter(t => t.status === 'pending').length,
+        totalEvents: allEvents.length,
+        completedEvents: completedEvents.length,
+        upcomingEvents: allEvents.filter(e => 
+          e.startDateTime > new Date() && e.status === 'scheduled'
         ).length,
-        completionRate: allTasks.length > 0 ? 
-          Math.round((completedTasks.length / allTasks.length) * 100) : 0,
+        completionRate: totalItems > 0 ? 
+          Math.round((completedItems / totalItems) * 100) : 0,
       },
       members: mockFamilyMembers.map(member => {
         const memberTasks = allTasks.filter(t => t.assigneeId === member.id);
-        const memberCompleted = memberTasks.filter(t => t.status === 'completed');
+        const memberEvents = allEvents.filter(e => e.assigneeId === member.id);
+        const memberTasksCompleted = memberTasks.filter(t => t.status === 'completed');
+        const memberEventsCompleted = memberEvents.filter(e => e.status === 'completed');
         const memberOverdue = memberTasks.filter(t => 
           t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
         );
+        
+        const totalAssigned = memberTasks.length + memberEvents.length;
+        const totalCompleted = memberTasksCompleted.length + memberEventsCompleted.length;
         
         return {
           memberId: member.id,
           memberName: member.name,
           avatarColor: member.avatarColor,
-          tasksAssigned: memberTasks.filter(t => t.category === 'task').length,
-          tasksCompleted: memberCompleted.filter(t => t.category === 'task').length,
-          eventsAssigned: memberTasks.filter(t => t.category === 'event').length,
-          eventsCompleted: memberCompleted.filter(t => t.category === 'event').length,
-          completionRate: memberTasks.length > 0 ? 
-            Math.round((memberCompleted.length / memberTasks.length) * 100) : 0,
+          tasksAssigned: memberTasks.length,
+          tasksCompleted: memberTasksCompleted.length,
+          eventsAssigned: memberEvents.length,
+          eventsCompleted: memberEventsCompleted.length,
+          completionRate: totalAssigned > 0 ? 
+            Math.round((totalCompleted / totalAssigned) * 100) : 0,
           overdueCount: memberOverdue.length,
         };
       }),
@@ -294,7 +311,14 @@ export const useUpdateTask = () => {
           ...day,
           tasks: day.tasks.map(task => 
             task.id === taskId 
-              ? { ...task, ...updates, updatedAt: new Date() }
+              ? { 
+                  ...task, 
+                  ...updates, 
+                  dueDate: updates.dueDate 
+                    ? (typeof updates.dueDate === 'string' ? new Date(updates.dueDate) : updates.dueDate)
+                    : task.dueDate,
+                  updatedAt: new Date() 
+                }
               : task
           ),
         }));
@@ -375,18 +399,10 @@ export const useCreateTaskMutation = () => {
             if (day.date === taskDate) {
               return {
                 ...day,
-                tasks: optimisticTask.category === 'task' 
-                  ? [...day.tasks, optimisticTask] 
-                  : day.tasks,
-                events: optimisticTask.category === 'event' 
-                  ? [...day.events, optimisticTask] 
-                  : day.events,
-                taskCount: optimisticTask.category === 'task' 
-                  ? day.taskCount + 1 
-                  : day.taskCount,
-                eventCount: optimisticTask.category === 'event' 
-                  ? day.eventCount + 1 
-                  : day.eventCount,
+                tasks: [...day.tasks, optimisticTask],
+                events: day.events, // Events are separate, don't add tasks here
+                taskCount: day.taskCount + 1,
+                eventCount: day.eventCount, // Event count unchanged
               };
             }
             return day;
@@ -396,15 +412,9 @@ export const useCreateTaskMutation = () => {
           if (newData.summary) {
             newData.summary = {
               ...newData.summary,
-              totalTasks: optimisticTask.category === 'task' 
-                ? newData.summary.totalTasks + 1 
-                : newData.summary.totalTasks,
-              totalEvents: optimisticTask.category === 'event' 
-                ? newData.summary.totalEvents + 1 
-                : newData.summary.totalEvents,
-              pendingTasks: optimisticTask.category === 'task' 
-                ? newData.summary.pendingTasks + 1 
-                : newData.summary.pendingTasks,
+              totalTasks: newData.summary.totalTasks + 1,
+              totalEvents: newData.summary.totalEvents, // Events unchanged
+              pendingTasks: newData.summary.pendingTasks + 1,
             };
           }
 
@@ -441,9 +451,7 @@ export const useCreateTaskMutation = () => {
             tasks: day.tasks.map((task: Task) =>
               task.id === context.optimisticTask.id ? newTask : task
             ),
-            events: day.events.map((event: Task) =>
-              event.id === context.optimisticTask.id ? newTask : event
-            ),
+            events: day.events, // Events don't need updating when creating tasks
           }));
 
           return newData;

@@ -7,9 +7,6 @@ import {
   TaskRecord,
   EventRecord,
   SyncLogRecord,
-  FamilyInsert,
-  TaskInsert,
-  EventInsert,
   FamilySettings,
   TaskStatus,
   EventStatus,
@@ -19,7 +16,6 @@ import {
 
 import {
   Family,
-  FamilyMember,
   Task,
   Event,
   CreateTaskInput,
@@ -74,6 +70,9 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should accept valid TaskRecord', () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30);
+      
       const validTask: TaskRecord = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         family_id: '123e4567-e89b-12d3-a456-426614174001',
@@ -81,7 +80,7 @@ describe('TypeScript Interface Validation', () => {
         description: 'Test description',
         assignee_id: '123e4567-e89b-12d3-a456-426614174002',
         created_by_id: '123e4567-e89b-12d3-a456-426614174003',
-        due_date: '2024-12-31T23:59:59Z',
+        due_date: futureDate.toISOString(),
         completed_at: null,
         status: 'pending',
         category: 'task',
@@ -98,6 +97,11 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should accept valid EventRecord', () => {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 30);
+      const endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() + 1);
+      
       const validEvent: EventRecord = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         family_id: '123e4567-e89b-12d3-a456-426614174001',
@@ -105,8 +109,8 @@ describe('TypeScript Interface Validation', () => {
         description: 'Test description',
         assignee_id: '123e4567-e89b-12d3-a456-426614174002',
         created_by_id: '123e4567-e89b-12d3-a456-426614174003',
-        start_datetime: '2024-12-31T10:00:00Z',
-        end_datetime: '2024-12-31T11:00:00Z',
+        start_datetime: startDate.toISOString(),
+        end_datetime: endDate.toISOString(),
         location: 'Test Location',
         status: 'scheduled',
         sync_version: 1,
@@ -162,6 +166,9 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should accept valid Task domain model', () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30);
+      
       const validTask: Task = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         familyId: '123e4567-e89b-12d3-a456-426614174001',
@@ -169,7 +176,7 @@ describe('TypeScript Interface Validation', () => {
         description: 'Test description',
         assigneeId: '123e4567-e89b-12d3-a456-426614174002',
         createdById: '123e4567-e89b-12d3-a456-426614174003',
-        dueDate: new Date('2024-12-31T23:59:59Z'),
+        dueDate: futureDate,
         completedAt: null,
         status: 'pending',
         category: 'task',
@@ -184,14 +191,19 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should accept valid Event domain model', () => {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 30);
+      const endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() + 1);
+      
       const validEvent: Event = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         familyId: '123e4567-e89b-12d3-a456-426614174001',
         title: 'Test Event',
         assigneeId: '123e4567-e89b-12d3-a456-426614174002',
         createdById: '123e4567-e89b-12d3-a456-426614174003',
-        startDateTime: new Date('2024-12-31T10:00:00Z'),
-        endDateTime: new Date('2024-12-31T11:00:00Z'),
+        startDateTime: startDate,
+        endDateTime: endDate,
         status: 'scheduled',
         syncVersion: 1,
         createdAt: new Date('2024-01-01T00:00:00Z'),
@@ -205,11 +217,14 @@ describe('TypeScript Interface Validation', () => {
 
   describe('Input Type Validation', () => {
     it('should accept valid CreateTaskInput', () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30);
+      
       const validInput: CreateTaskInput = {
         title: 'New Task',
         description: 'Task description',
         assigneeId: '123e4567-e89b-12d3-a456-426614174000',
-        dueDate: new Date('2024-12-31T23:59:59Z'),
+        dueDate: futureDate,
         priority: 'high',
         category: 'task'
       };
@@ -219,11 +234,16 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should accept valid CreateEventInput', () => {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 30);
+      const endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() + 1);
+      
       const validInput: CreateEventInput = {
         title: 'New Event',
         assigneeId: '123e4567-e89b-12d3-a456-426614174000',
-        startDateTime: new Date('2024-12-31T10:00:00Z'),
-        endDateTime: new Date('2024-12-31T11:00:00Z'),
+        startDateTime: startDate,
+        endDateTime: endDate,
         location: 'Meeting Room'
       };
 
@@ -354,12 +374,15 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should validate task insert with Zod schema', () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30); // 30 days in the future
+      
       const validData = {
         family_id: '123e4567-e89b-12d3-a456-426614174000',
         title: 'Test Task',
         assignee_id: '123e4567-e89b-12d3-a456-426614174001',
         created_by_id: '123e4567-e89b-12d3-a456-426614174002',
-        due_date: '2024-12-31T23:59:59Z',
+        due_date: futureDate.toISOString(),
         priority: 'high'
       };
 
@@ -372,13 +395,18 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should validate event insert with Zod schema', () => {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 30); // 30 days in the future
+      const endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() + 1); // 1 hour after start
+      
       const validData = {
         family_id: '123e4567-e89b-12d3-a456-426614174000',
         title: 'Test Event',
         assignee_id: '123e4567-e89b-12d3-a456-426614174001',
         created_by_id: '123e4567-e89b-12d3-a456-426614174002',
-        start_datetime: '2024-12-31T10:00:00Z',
-        end_datetime: '2024-12-31T11:00:00Z'
+        start_datetime: startDate.toISOString(),
+        end_datetime: endDate.toISOString()
       };
 
       const result = validateSchema(validators.event.insert, validData);
@@ -389,13 +417,18 @@ describe('TypeScript Interface Validation', () => {
     });
 
     it('should reject event with end_datetime before start_datetime', () => {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 30); // 30 days in the future
+      const endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() - 1); // 1 hour before start (invalid)
+      
       const invalidData = {
         family_id: '123e4567-e89b-12d3-a456-426614174000',
         title: 'Test Event',
         assignee_id: '123e4567-e89b-12d3-a456-426614174001',
         created_by_id: '123e4567-e89b-12d3-a456-426614174002',
-        start_datetime: '2024-12-31T11:00:00Z',
-        end_datetime: '2024-12-31T10:00:00Z' // Before start time
+        start_datetime: startDate.toISOString(),
+        end_datetime: endDate.toISOString() // Before start time
       };
 
       const result = validateSchema(validators.event.insert, invalidData);
@@ -429,7 +462,7 @@ describe('TypeScript Interface Validation', () => {
   });
 
   describe('Type Guards', () => {
-    it('should correctly identify TaskRecord', () => {
+    it('should correctly identify TaskRecord', async () => {
       const taskRecord = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         family_id: '123e4567-e89b-12d3-a456-426614174001',
@@ -437,31 +470,31 @@ describe('TypeScript Interface Validation', () => {
         assignee_id: '123e4567-e89b-12d3-a456-426614174002'
       };
 
-      const { isTaskRecord } = require('../../src/types/index');
+      const { isTaskRecord } = await import('../../src/types/index');
       expect(isTaskRecord(taskRecord)).toBe(true);
       expect(isTaskRecord({ id: 'invalid' })).toBe(false);
     });
 
-    it('should correctly identify EventRecord', () => {
+    it('should correctly identify EventRecord', async () => {
       const eventRecord = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         family_id: '123e4567-e89b-12d3-a456-426614174001',
         start_datetime: '2024-12-31T10:00:00Z'
       };
 
-      const { isEventRecord } = require('../../src/types/index');
+      const { isEventRecord } = await import('../../src/types/index');
       expect(isEventRecord(eventRecord)).toBe(true);
       expect(isEventRecord({ id: 'invalid' })).toBe(false);
     });
 
-    it('should correctly identify FamilyMemberRecord', () => {
+    it('should correctly identify FamilyMemberRecord', async () => {
       const memberRecord = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         family_id: '123e4567-e89b-12d3-a456-426614174001',
         email: 'test@example.com'
       };
 
-      const { isFamilyMemberRecord } = require('../../src/types/index');
+      const { isFamilyMemberRecord } = await import('../../src/types/index');
       expect(isFamilyMemberRecord(memberRecord)).toBe(true);
       expect(isFamilyMemberRecord({ id: 'invalid' })).toBe(false);
     });

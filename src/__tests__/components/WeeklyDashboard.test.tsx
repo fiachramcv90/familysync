@@ -2,9 +2,11 @@
 // Story 1.4: Basic Family Dashboard
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from '@/app/dashboard/page';
+import { useWeekNavigation } from '@/hooks/useWeekNavigation';
+import { useSelectedFamilyMember, useFilterActions, useShowQuickAdd, useUIActions } from '@/stores/app-store';
 import '@testing-library/jest-dom';
 
 // Mock the hooks
@@ -12,7 +14,15 @@ jest.mock('@/hooks/useWeekNavigation');
 jest.mock('@/stores/app-store', () => ({
   useSelectedFamilyMember: jest.fn(),
   useFilterActions: jest.fn(),
+  useShowQuickAdd: jest.fn(),
+  useUIActions: jest.fn(),
 }));
+
+const mockUseWeekNavigation = jest.mocked(useWeekNavigation);
+const mockUseSelectedFamilyMember = jest.mocked(useSelectedFamilyMember);
+const mockUseFilterActions = jest.mocked(useFilterActions);
+const mockUseShowQuickAdd = jest.mocked(useShowQuickAdd);
+const mockUseUIActions = jest.mocked(useUIActions);
 
 // Mock the child components
 jest.mock('@/components/calendar/WeekNavigation', () => ({
@@ -24,7 +34,7 @@ jest.mock('@/components/calendar/WeekNavigation', () => ({
 }));
 
 jest.mock('@/components/calendar/WeekView', () => ({
-  WeekView: ({ isMobile, showSummary, className }: any) => (
+  WeekView: ({ isMobile, showSummary, className }: { isMobile?: boolean; showSummary?: boolean; className?: string }) => (
     <div 
       data-testid="week-view" 
       className={className}
@@ -136,8 +146,7 @@ describe('WeeklyDashboard', () => {
     });
 
     // Mock the useWeekNavigation hook
-    const mockUseWeekNavigation = require('@/hooks/useWeekNavigation');
-    mockUseWeekNavigation.useWeekNavigation.mockReturnValue({
+    mockUseWeekNavigation.mockReturnValue({
       weekData: mockWeekData,
       isLoading: false,
       isCurrentWeek: true,
@@ -149,11 +158,15 @@ describe('WeeklyDashboard', () => {
     });
 
     // Mock the store hooks
-    const mockStore = require('@/stores/app-store');
-    mockStore.useSelectedFamilyMember.mockReturnValue(null);
-    mockStore.useFilterActions.mockReturnValue({
+    mockUseSelectedFamilyMember.mockReturnValue(null);
+    mockUseFilterActions.mockReturnValue({
       setSelectedFamilyMember: jest.fn(),
       resetFilters: jest.fn(),
+    });
+    mockUseShowQuickAdd.mockReturnValue(false);
+    mockUseUIActions.mockReturnValue({
+      setShowQuickAdd: jest.fn(),
+      setIsLoading: jest.fn(),
     });
   });
 
@@ -180,8 +193,7 @@ describe('WeeklyDashboard', () => {
   });
 
   it('shows loading state when data is loading', () => {
-    const mockUseWeekNavigation = require('@/hooks/useWeekNavigation');
-    mockUseWeekNavigation.useWeekNavigation.mockReturnValue({
+    mockUseWeekNavigation.mockReturnValue({
       weekData: null,
       isLoading: true,
       isCurrentWeek: true,
@@ -203,8 +215,7 @@ describe('WeeklyDashboard', () => {
   });
 
   it('shows error state when data fails to load', () => {
-    const mockUseWeekNavigation = require('@/hooks/useWeekNavigation');
-    mockUseWeekNavigation.useWeekNavigation.mockReturnValue({
+    mockUseWeekNavigation.mockReturnValue({
       weekData: null,
       isLoading: false,
       isCurrentWeek: true,
@@ -240,8 +251,7 @@ describe('WeeklyDashboard', () => {
       },
     };
 
-    const mockUseWeekNavigation = require('@/hooks/useWeekNavigation');
-    mockUseWeekNavigation.useWeekNavigation.mockReturnValue({
+    mockUseWeekNavigation.mockReturnValue({
       weekData: emptyWeekData,
       isLoading: false,
       isCurrentWeek: true,
@@ -307,8 +317,7 @@ describe('WeeklyDashboard', () => {
       ],
     };
 
-    const mockUseWeekNavigation = require('@/hooks/useWeekNavigation');
-    mockUseWeekNavigation.useWeekNavigation.mockReturnValue({
+    mockUseWeekNavigation.mockReturnValue({
       weekData: multiMemberData,
       isLoading: false,
       isCurrentWeek: true,
@@ -352,8 +361,7 @@ describe('WeeklyDashboard', () => {
       ],
     };
 
-    const mockUseWeekNavigation = require('@/hooks/useWeekNavigation');
-    mockUseWeekNavigation.useWeekNavigation.mockReturnValue({
+    mockUseWeekNavigation.mockReturnValue({
       weekData: multiMemberData,
       isLoading: false,
       isCurrentWeek: true,
@@ -401,8 +409,7 @@ describe('WeeklyDashboard', () => {
       members: [],
     };
 
-    const mockUseWeekNavigation = require('@/hooks/useWeekNavigation');
-    mockUseWeekNavigation.useWeekNavigation.mockReturnValue({
+    mockUseWeekNavigation.mockReturnValue({
       weekData: noMembersData,
       isLoading: false,
       isCurrentWeek: true,

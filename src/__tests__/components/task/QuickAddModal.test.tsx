@@ -1,14 +1,20 @@
 // QuickAddModal Component Tests
 // Story 2.1: Task Creation and Basic Management
 
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { QuickAddModal } from '@/components/task/QuickAddModal';
+import { useCreateTask } from '@/hooks/useCreateTask';
+import { useFamilyMembers } from '@/hooks/useFamilyTasks';
 
 // Mock the hooks
 jest.mock('@/hooks/useCreateTask');
 jest.mock('@/hooks/useFamilyTasks');
+
+const mockUseCreateTask = jest.mocked(useCreateTask);
+const mockUseFamilyMembers = jest.mocked(useFamilyMembers);
 
 // Mock family members data
 const mockFamilyMembers = [
@@ -49,11 +55,15 @@ const createTestWrapper = () => {
     },
   });
 
-  return ({ children }: { children: React.ReactNode }) => (
+  const TestWrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
     </QueryClientProvider>
   );
+  
+  TestWrapper.displayName = 'TestWrapper';
+  
+  return TestWrapper;
 };
 
 describe('QuickAddModal', () => {
@@ -63,9 +73,6 @@ describe('QuickAddModal', () => {
     jest.clearAllMocks();
     
     // Mock the hooks
-    const mockUseCreateTask = require('@/hooks/useCreateTask').useCreateTask as jest.MockedFunction<any>;
-    const mockUseFamilyMembers = require('@/hooks/useFamilyTasks').useFamilyMembers as jest.MockedFunction<any>;
-    
     mockUseCreateTask.mockReturnValue({
       mutateAsync: mockCreateTask,
       isLoading: false,
@@ -89,7 +96,7 @@ describe('QuickAddModal', () => {
       { wrapper: createTestWrapper() }
     );
 
-    expect(screen.getByText('Create Task')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Create Task' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
@@ -123,14 +130,14 @@ describe('QuickAddModal', () => {
     );
 
     // Initially should be task type
-    expect(screen.getByText('Create Task')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Create Task' })).toBeInTheDocument();
 
     // Click event button
     const eventButton = screen.getByRole('radio', { name: /Event/ });
     await user.click(eventButton);
 
     // Should switch to event
-    expect(screen.getByText('Create Event')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Create Event' })).toBeInTheDocument();
   });
 
   it('shows family members for assignment', () => {
@@ -139,9 +146,10 @@ describe('QuickAddModal', () => {
       { wrapper: createTestWrapper() }
     );
 
-    expect(screen.getByText('Mom')).toBeInTheDocument();
-    expect(screen.getByText('Dad')).toBeInTheDocument();
-    expect(screen.getByText('admin')).toBeInTheDocument();
+    // Check that family members are shown as radio options
+    expect(screen.getByRole('radio', { name: /Mom admin/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Dad admin/ })).toBeInTheDocument();
+    expect(screen.getByText('Choose assignee')).toBeInTheDocument();
   });
 
   it('validates required fields', async () => {
@@ -152,15 +160,24 @@ describe('QuickAddModal', () => {
       { wrapper: createTestWrapper() }
     );
 
-    // Try to submit without filling required fields
+    // Submit button should be disabled when required fields are empty
     const submitButton = screen.getByRole('button', { name: /Create Task/ });
-    await user.click(submitButton);
+    expect(submitButton).toBeDisabled();
 
-    // Should show validation errors
-    await waitFor(() => {
-      expect(screen.getByText('Title is required')).toBeInTheDocument();
-      expect(screen.getByText('Please select a family member')).toBeInTheDocument();
-    });
+    // Fill in title but not assignee - should still be disabled
+    const titleInput = screen.getByLabelText(/Title/);
+    await user.type(titleInput, 'Test task');
+    expect(submitButton).toBeDisabled();
+
+    // Clear title and select assignee - should still be disabled
+    await user.clear(titleInput);
+    const momButton = screen.getByRole('radio', { name: /Mom admin/ });
+    await user.click(momButton);
+    expect(submitButton).toBeDisabled();
+
+    // Fill in both - should be enabled
+    await user.type(titleInput, 'Test task');
+    expect(submitButton).not.toBeDisabled();
   });
 
   it('creates task with valid data', async () => {
@@ -171,12 +188,12 @@ describe('QuickAddModal', () => {
       { wrapper: createTestWrapper() }
     );
 
-    // Fill in the form
+    // Fill in the form using fireEvent to avoid typing issues
     const titleInput = screen.getByLabelText(/Title/);
-    await user.type(titleInput, 'Buy groceries');
+    fireEvent.change(titleInput, { target: { value: 'Test Task Title' } });
 
     const descriptionInput = screen.getByLabelText(/Description/);
-    await user.type(descriptionInput, 'Get milk and bread');
+    fireEvent.change(descriptionInput, { target: { value: 'Task description' } });
 
     // Select family member
     const momButton = screen.getByRole('radio', { name: /Mom admin/ });
@@ -193,8 +210,8 @@ describe('QuickAddModal', () => {
     // Verify task creation was called
     await waitFor(() => {
       expect(mockCreateTask).toHaveBeenCalledWith({
-        title: 'Buy groceries',
-        description: 'Get milk and bread',
+        title: 'Test Task Title',
+        description: 'Task description',
         assigneeId: '1',
         dueDate: undefined,
         category: 'task',
@@ -214,7 +231,7 @@ describe('QuickAddModal', () => {
 
     // Fill in minimal required data
     const titleInput = screen.getByLabelText(/Title/);
-    await user.type(titleInput, 'Test task');
+    fireEvent.change(titleInput, { target: { value: 'Test task' } });
 
     const momButton = screen.getByRole('radio', { name: /Mom admin/ });
     await user.click(momButton);
@@ -240,7 +257,7 @@ describe('QuickAddModal', () => {
 
     // Fill in minimal required data
     const titleInput = screen.getByLabelText(/Title/);
-    await user.type(titleInput, 'Test task');
+    fireEvent.change(titleInput, { target: { value: 'Test task' } });
 
     const momButton = screen.getByRole('radio', { name: /Mom admin/ });
     await user.click(momButton);
@@ -248,9 +265,10 @@ describe('QuickAddModal', () => {
     const submitButton = screen.getByRole('button', { name: /Create Task/ });
     await user.click(submitButton);
 
-    // Should show error message
+    // Should show error message with role alert
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      const errorAlert = screen.getByRole('alert');
+      expect(errorAlert).toHaveTextContent(errorMessage);
     });
 
     // Modal should remain open
@@ -269,7 +287,9 @@ describe('QuickAddModal', () => {
 
     // Should show Mom as selected (defaultAssigneeId="1")
     expect(screen.getByText('Assigned')).toBeInTheDocument();
-    expect(screen.getByText('Mom')).toBeInTheDocument();
+    // Should show the selected radio button for Mom
+    const momRadio = screen.getByRole('radio', { name: /Mom admin/ });
+    expect(momRadio).toHaveAttribute('aria-checked', 'true');
   });
 
   it('allows canceling modal', async () => {
@@ -287,10 +307,8 @@ describe('QuickAddModal', () => {
   });
 
   it('prevents closing while submitting', async () => {
-    const user = userEvent.setup();
     
     // Mock a pending creation
-    const mockUseCreateTask = require('@/hooks/useCreateTask').useCreateTask as jest.MockedFunction<any>;
     mockUseCreateTask.mockReturnValue({
       mutateAsync: () => new Promise(() => {}), // Never resolves
       isLoading: true,

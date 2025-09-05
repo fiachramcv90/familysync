@@ -31,7 +31,6 @@ test('Dashboard loads without errors', async ({ page }) => {
   await page.screenshot({ path: 'dashboard-state.png', fullPage: true });
   
   // Print page content for debugging
-  const content = await page.content();
   console.log('Page title:', await page.title());
   console.log('Dashboard elements found:', {
     weekNavigation: await weekNavigation.count(),

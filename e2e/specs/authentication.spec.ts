@@ -22,7 +22,7 @@ test.describe('Authentication Flow', () => {
     await expect(page).toHaveURL('/dashboard', { timeout: 10000 })
     
     // Logout
-    await page.goto('/api/auth/logout', { method: 'POST' })
+    await page.request.post('/api/auth/logout')
     
     // Navigate to login page
     await page.goto('/auth/login')
