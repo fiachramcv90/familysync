@@ -55,7 +55,7 @@ export function EmptyWeekState({ className, isFirstTime = false }: EmptyWeekStat
         <p className="text-gray-600 mb-6 leading-relaxed">
           {isFirstTime ? (
             <>
-              Start coordinating your family's schedule by adding your first task. 
+              Start coordinating your family&apos;s schedule by adding your first task. 
               FamilySync helps everyone stay on the same page with shared responsibilities, 
               events, and daily coordination.
             </>
@@ -96,7 +96,7 @@ export function EmptyWeekState({ className, isFirstTime = false }: EmptyWeekStat
                 <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                See everyone's workload at a glance
+                See everyone&apos;s workload at a glance
               </li>
             </ul>
           </div>

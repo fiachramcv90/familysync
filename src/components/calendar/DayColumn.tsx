@@ -1,7 +1,7 @@
 // Day Column Component for Weekly Calendar
 // Story 1.4: Basic Family Dashboard
 
-import { WeeklyTaskView } from '@/types/task';
+import { WeeklyTaskView, Task, Event } from '@/types/task';
 import { TaskCard, TaskSummary } from '@/components/task/TaskCard';
 import { format, isToday } from 'date-fns';
 import { clsx } from 'clsx';
@@ -23,20 +23,27 @@ export function DayColumn({
 }: DayColumnProps) {
   const todayClass = isToday(date);
   const hasItems = day.tasks.length > 0 || day.events.length > 0;
-  const allItems = [...day.tasks, ...day.events].sort((a, b) => {
-    // Sort by due date, then by priority
+  // Sort tasks by priority and due date
+  const sortedTasks = day.tasks.sort((a, b) => {
+    // Sort by priority first: high > medium > low
+    const priorityOrder = { high: 3, medium: 2, low: 1 };
+    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+
+    // Then by due date
     if (a.dueDate && b.dueDate) {
-      const dateDiff = a.dueDate.getTime() - b.dueDate.getTime();
-      if (dateDiff !== 0) return dateDiff;
+      return a.dueDate.getTime() - b.dueDate.getTime();
     } else if (a.dueDate && !b.dueDate) {
       return -1;
     } else if (!a.dueDate && b.dueDate) {
       return 1;
     }
-    
-    // Sort by priority: high > medium > low
-    const priorityOrder = { high: 3, medium: 2, low: 1 };
-    return priorityOrder[b.priority] - priorityOrder[a.priority];
+    return 0;
+  });
+
+  // Sort events by start time
+  const sortedEvents = day.events.sort((a, b) => {
+    return a.startDateTime.getTime() - b.startDateTime.getTime();
   });
 
   return (
@@ -89,19 +96,37 @@ export function DayColumn({
       {/* Tasks and events list */}
       <div className="flex-1 overflow-y-auto p-2">
         <div className="space-y-2">
-          {allItems.length > 0 ? (
-            allItems.map((item) => (
-              <TaskCard
-                key={item.id}
-                task={item}
-                compact={isCompact}
-                showDate={false} // Don't show date since it's implied by the column
-                className="w-full"
-              />
-            ))
-          ) : (
+          {/* Render tasks */}
+          {sortedTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              compact={isCompact}
+              showDate={false} // Don't show date since it's implied by the column
+              className="w-full"
+            />
+          ))}
+          
+          {/* Render events - for now, just show a simple card */}
+          {sortedEvents.map((event) => (
+            <div
+              key={event.id}
+              className="w-full border border-blue-200 bg-blue-50 rounded-lg p-3"
+            >
+              <div className="font-medium text-blue-900">{event.title}</div>
+              <div className="text-sm text-blue-700 mt-1">
+                {format(event.startDateTime, 'HH:mm')} - {format(event.endDateTime, 'HH:mm')}
+              </div>
+              {event.location && (
+                <div className="text-xs text-blue-600 mt-1">{event.location}</div>
+              )}
+            </div>
+          ))}
+          
+          {/* Show empty state if no items */}
+          {!hasItems && (
             <div className="text-center text-gray-400 py-8">
-              <div className="text-sm">No tasks</div>
+              <div className="text-sm">No tasks or events</div>
               {!isCompact && (
                 <div className="text-xs mt-1">for today</div>
               )}

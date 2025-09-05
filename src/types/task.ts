@@ -4,6 +4,9 @@
 import { TaskRecord, EventRecord, Priority, TaskStatus, EventStatus } from './database';
 import { FamilyMember } from './family';
 
+// Re-export types that are commonly used by components
+export type { Priority, TaskStatus, EventStatus } from './database';
+
 // Domain model interfaces for tasks
 export interface Task {
   id: string;

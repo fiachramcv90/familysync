@@ -28,9 +28,9 @@ export const pastOrPresentDateSchema = z.union([
 
 // Family Settings validation
 export const familySettingsSchema = z.object({
-  weekStartDay: z.enum(['sunday', 'monday'], {
-    errorMap: () => ({ message: 'Week start day must be either sunday or monday' })
-  }),
+  weekStartDay: z.enum(['sunday', 'monday'], 
+    'Week start day must be either sunday or monday'
+  ),
   timezone: z.string().min(1, 'Timezone is required'),
   notifications: z.object({
     enabled: z.boolean(),
@@ -214,8 +214,8 @@ export const syncLogInsertSchema = z.object({
   table_name: z.enum(['families', 'family_members', 'tasks', 'events']),
   record_id: uuidSchema,
   operation: z.enum(['INSERT', 'UPDATE', 'DELETE']),
-  old_data: z.record(z.any()).nullable().optional(),
-  new_data: z.record(z.any()).nullable().optional(),
+  old_data: z.record(z.string(), z.any()).nullable().optional(),
+  new_data: z.record(z.string(), z.any()).nullable().optional(),
   conflict_resolved: z.boolean().default(false),
   sync_timestamp: z.string().datetime().optional(),
   created_by_id: uuidSchema.nullable().optional()
@@ -336,7 +336,7 @@ export function validateSchema<T>(schema: z.ZodSchema<T>, data: unknown): Valida
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        errors: error.errors.map(err => ({
+        errors: error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message
         }))

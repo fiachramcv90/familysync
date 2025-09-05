@@ -61,6 +61,7 @@ export function QuickAddModal({
 
   const createTaskMutation = useCreateTask({
     onSuccess: () => {
+      setIsSubmitting(false);
       handleClose();
     },
     onError: (error) => {
@@ -68,6 +69,9 @@ export function QuickAddModal({
       setIsSubmitting(false);
     },
   });
+
+  // Combine loading states
+  const isActuallySubmitting = isSubmitting || createTaskMutation.isLoading;
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -93,7 +97,7 @@ export function QuickAddModal({
   }, [isOpen]);
 
   const handleClose = () => {
-    if (!isSubmitting) {
+    if (!isActuallySubmitting) {
       onClose();
     }
   };
@@ -156,8 +160,8 @@ export function QuickAddModal({
       onClose={handleClose}
       title={`Create ${formData.category === 'task' ? 'Task' : 'Event'}`}
       size="lg"
-      closeOnOverlayClick={!isSubmitting}
-      closeOnEscapeKey={!isSubmitting}
+      closeOnOverlayClick={!isActuallySubmitting}
+      closeOnEscapeKey={!isActuallySubmitting}
     >
       <form 
         onSubmit={(e) => {
@@ -260,16 +264,16 @@ export function QuickAddModal({
             type="button"
             variant="outline"
             onClick={handleClose}
-            disabled={isSubmitting}
+            disabled={isActuallySubmitting}
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            isLoading={isSubmitting}
+            isLoading={isActuallySubmitting}
             disabled={!formData.title.trim() || !formData.assigneeId}
           >
-            {isSubmitting 
+            {isActuallySubmitting 
               ? `Creating ${formData.category}...` 
               : `Create ${formData.category === 'task' ? 'Task' : 'Event'}`
             }

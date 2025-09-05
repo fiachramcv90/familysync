@@ -2,13 +2,16 @@
 // Story 2.1: Task Creation and Basic Management
 
 import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCreateTask } from '@/hooks/useCreateTask';
 import { CreateTaskInput } from '@/types/task';
+import { useCreateTaskMutation } from '@/hooks/useFamilyTasks';
 
 // Mock the useFamilyTasks module
 jest.mock('@/hooks/useFamilyTasks');
+
+const mockUseCreateTaskMutation = jest.mocked(useCreateTaskMutation);
 
 const createTestWrapper = () => {
   const queryClient = new QueryClient({
@@ -18,11 +21,15 @@ const createTestWrapper = () => {
     },
   });
 
-  return ({ children }: { children: React.ReactNode }) => (
+  const TestWrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
     </QueryClientProvider>
   );
+  
+  TestWrapper.displayName = 'TestWrapper';
+  
+  return TestWrapper;
 };
 
 const mockCreateTaskMutation = jest.fn();
@@ -31,7 +38,6 @@ describe('useCreateTask', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    const mockUseCreateTaskMutation = require('@/hooks/useFamilyTasks').useCreateTaskMutation as jest.MockedFunction<any>;
     mockUseCreateTaskMutation.mockReturnValue({
       mutateAsync: mockCreateTaskMutation,
       mutate: jest.fn(),
@@ -109,7 +115,7 @@ describe('useCreateTask', () => {
 
     try {
       await result.current.mutateAsync(taskInput);
-    } catch (e) {
+    } catch {
       // Expected to throw
     }
 
@@ -117,7 +123,6 @@ describe('useCreateTask', () => {
   });
 
   it('reflects loading state from mutation', () => {
-    const mockUseCreateTaskMutation = require('@/hooks/useFamilyTasks').useCreateTaskMutation as jest.MockedFunction<any>;
     mockUseCreateTaskMutation.mockReturnValue({
       mutateAsync: jest.fn(),
       mutate: jest.fn(),
@@ -135,7 +140,6 @@ describe('useCreateTask', () => {
 
   it('reflects error state from mutation', () => {
     const error = new Error('Mutation error');
-    const mockUseCreateTaskMutation = require('@/hooks/useFamilyTasks').useCreateTaskMutation as jest.MockedFunction<any>;
     mockUseCreateTaskMutation.mockReturnValue({
       mutateAsync: jest.fn(),
       mutate: jest.fn(),
@@ -153,7 +157,6 @@ describe('useCreateTask', () => {
 
   it('provides reset function', () => {
     const mockReset = jest.fn();
-    const mockUseCreateTaskMutation = require('@/hooks/useFamilyTasks').useCreateTaskMutation as jest.MockedFunction<any>;
     mockUseCreateTaskMutation.mockReturnValue({
       mutateAsync: jest.fn(),
       mutate: jest.fn(),
