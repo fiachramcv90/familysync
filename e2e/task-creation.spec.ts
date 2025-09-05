@@ -95,7 +95,11 @@ test.describe('Task Creation Flow', () => {
     const btnVisible = await createTaskBtn.isVisible({ timeout: 2000 }).catch(() => false)
     
     if (!btnVisible) {
+<<<<<<< HEAD
       test.skip(true, 'Create Task button not found - modal structure may differ')
+=======
+      test.skip('Create Task button not found - modal structure may differ')
+>>>>>>> origin/main
       return
     }
     
@@ -215,7 +219,11 @@ test.describe('Task Creation Flow', () => {
     const titleVisible = await titleField.isVisible({ timeout: 2000 }).catch(() => false)
     
     if (!titleVisible) {
+<<<<<<< HEAD
       test.skip(true, 'Task creation form not available - modal structure may differ')
+=======
+      test.skip('Task creation form not available - modal structure may differ')
+>>>>>>> origin/main
       return
     }
     
@@ -239,7 +247,11 @@ test.describe('Task Creation Flow', () => {
       await expect(modal).not.toBeVisible()
       await expect(page.getByText('Mobile task')).toBeVisible()
     } else {
+<<<<<<< HEAD
       test.skip(true, 'Create Task button not found - cannot complete mobile test')
+=======
+      test.skip('Create Task button not found - cannot complete mobile test')
+>>>>>>> origin/main
     }
   })
 })
