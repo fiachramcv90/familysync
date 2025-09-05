@@ -78,8 +78,10 @@ jobs:
 
       - name: Bundle size analysis
         run: |
-          npx next build --profile --experimental-build-mode=standalone
+          # Build already completed in previous step, just analyze bundle size
           du -sh .next/
+          # Optional: Show detailed bundle analysis
+          ls -la .next/static/chunks/ | head -20
 
   e2e-test:
     name: E2E Authentication Tests
