@@ -8,6 +8,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { QuickAddModal } from '@/components/task/QuickAddModal';
 import { useCreateTask } from '@/hooks/useCreateTask';
 import { useFamilyMembers } from '@/hooks/useFamilyTasks';
+import { FamilyMember } from '@/types/family';
+import { Task, CreateTaskInput } from '@/types/task';
 
 // Mock the hooks
 jest.mock('@/hooks/useCreateTask');
@@ -16,8 +18,26 @@ jest.mock('@/hooks/useFamilyTasks');
 const mockUseCreateTask = jest.mocked(useCreateTask);
 const mockUseFamilyMembers = jest.mocked(useFamilyMembers);
 
+type CreateTaskReturn = {
+  mutateAsync: (input: CreateTaskInput) => Promise<Task>;
+  mutate: (input: CreateTaskInput) => void;
+  isLoading: boolean;
+  error: Error | null;
+  reset: () => void;
+};
+
+type FamilyMembersReturn = {
+  data?: FamilyMember[];
+  isLoading: boolean;
+  isError: boolean;
+  error?: Error | null;
+  refetch?: () => void;
+  isSuccess?: boolean;
+  status?: 'error' | 'success' | 'loading';
+};
+
 // Mock family members data
-const mockFamilyMembers = [
+const mockFamilyMembers: FamilyMember[] = [
   {
     id: '1',
     familyId: 'family-1',
@@ -75,15 +95,21 @@ describe('QuickAddModal', () => {
     // Mock the hooks
     mockUseCreateTask.mockReturnValue({
       mutateAsync: mockCreateTask,
+      mutate: jest.fn(),
       isLoading: false,
       error: null,
+      reset: jest.fn(),
     });
 
     mockUseFamilyMembers.mockReturnValue({
       data: mockFamilyMembers,
       isLoading: false,
       isError: false,
-    });
+      error: null,
+      refetch: jest.fn(),
+      isSuccess: true,
+      status: 'success' as const,
+    } as any);
   });
 
   afterEach(() => {
@@ -222,12 +248,40 @@ describe('QuickAddModal', () => {
 
   it('closes modal on successful task creation', async () => {
     const user = userEvent.setup();
-    mockCreateTask.mockResolvedValueOnce({ id: 'new-task-id' });
+    
+    // Create a task that resolves successfully
+    const mockTask = { id: 'new-task-id', title: 'Test task', assigneeId: '1', category: 'task' as const, priority: 'medium' as const };
+    mockCreateTask.mockResolvedValueOnce(mockTask);
+    
+    // Mock useCreateTask to simulate the success callback being called
+    let successCallback: ((task: Task) => void) | undefined;
+    mockUseCreateTask.mockReturnValue({
+      mutateAsync: async (input: CreateTaskInput) => {
+        const result = await mockCreateTask(input);
+        if (successCallback) {
+          successCallback(result);
+        }
+        return result;
+      },
+      mutate: jest.fn(),
+      isLoading: false,
+      error: null,
+      reset: jest.fn(),
+    });
     
     render(
       <QuickAddModal isOpen={true} onClose={mockOnClose} />,
       { wrapper: createTestWrapper() }
     );
+
+    // Capture the success callback when useCreateTask is called
+    expect(mockUseCreateTask).toHaveBeenCalledWith(expect.objectContaining({
+      onSuccess: expect.any(Function),
+    }));
+    const firstCall = mockUseCreateTask.mock.calls[0];
+    if (firstCall && firstCall[0]) {
+      successCallback = firstCall[0].onSuccess;
+    }
 
     // Fill in minimal required data
     const titleInput = screen.getByLabelText(/Title/);
@@ -248,12 +302,40 @@ describe('QuickAddModal', () => {
   it('shows error message on creation failure', async () => {
     const user = userEvent.setup();
     const errorMessage = 'Failed to create task';
+    
+    // Mock useCreateTask to simulate the error callback being called
+    let errorCallback: ((error: Error) => void) | undefined;
     mockCreateTask.mockRejectedValueOnce(new Error(errorMessage));
+    mockUseCreateTask.mockReturnValue({
+      mutateAsync: async (input: CreateTaskInput) => {
+        try {
+          return await mockCreateTask(input);
+        } catch (error) {
+          if (errorCallback) {
+            errorCallback(error as Error);
+          }
+          throw error;
+        }
+      },
+      mutate: jest.fn(),
+      isLoading: false,
+      error: null,
+      reset: jest.fn(),
+    });
     
     render(
       <QuickAddModal isOpen={true} onClose={mockOnClose} />,
       { wrapper: createTestWrapper() }
     );
+
+    // Capture the error callback when useCreateTask is called
+    expect(mockUseCreateTask).toHaveBeenCalledWith(expect.objectContaining({
+      onError: expect.any(Function),
+    }));
+    const firstCall = mockUseCreateTask.mock.calls[0];
+    if (firstCall && firstCall[0]) {
+      errorCallback = firstCall[0].onError;
+    }
 
     // Fill in minimal required data
     const titleInput = screen.getByLabelText(/Title/);
@@ -311,8 +393,10 @@ describe('QuickAddModal', () => {
     // Mock a pending creation
     mockUseCreateTask.mockReturnValue({
       mutateAsync: () => new Promise(() => {}), // Never resolves
+      mutate: jest.fn(),
       isLoading: true,
       error: null,
+      reset: jest.fn(),
     });
     
     render(

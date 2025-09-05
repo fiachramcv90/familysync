@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from '@/app/dashboard/page';
 import { useWeekNavigation } from '@/hooks/useWeekNavigation';
 import { useSelectedFamilyMember, useFilterActions, useShowQuickAdd, useUIActions } from '@/stores/app-store';
+import { WeeklyDashboardData } from '@/types/task';
+import { FamilyMember } from '@/types/family';
 import '@testing-library/jest-dom';
 
 // Mock the hooks
@@ -84,7 +86,7 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 // Mock data
-const mockWeekData = {
+const mockWeekData: WeeklyDashboardData = {
   weekStartDate: '2024-01-01',
   weekEndDate: '2024-01-07',
   days: [
@@ -94,11 +96,16 @@ const mockWeekData = {
       tasks: [
         {
           id: '1',
+          familyId: 'family-1',
           title: 'Test Task',
           assigneeId: 'user1',
+          createdById: 'user1',
           status: 'pending',
           category: 'task' as const,
           priority: 'medium' as const,
+          syncVersion: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ],
       events: [],
@@ -147,18 +154,29 @@ describe('WeeklyDashboard', () => {
 
     // Mock the useWeekNavigation hook
     mockUseWeekNavigation.mockReturnValue({
-      weekData: mockWeekData,
-      isLoading: false,
+      currentWeek: new Date(),
+      weekStart: new Date(),
+      weekEnd: new Date(),
       isCurrentWeek: true,
+      weekRange: 'This Week',
       weekTitle: 'This Week',
       weekDays: [],
       goToPreviousWeek: jest.fn(),
       goToNextWeek: jest.fn(),
       goToCurrentWeek: jest.fn(),
+      goToSpecificWeek: jest.fn(),
+      weekData: mockWeekData,
+      isNavigating: false,
+      isLoading: false,
+      previousWeekData: undefined,
+      nextWeekData: undefined,
+      formatDate: jest.fn(),
+      isDateToday: jest.fn(),
+      isDateInCurrentWeek: jest.fn(),
     });
 
     // Mock the store hooks
-    mockUseSelectedFamilyMember.mockReturnValue(null);
+    mockUseSelectedFamilyMember.mockReturnValue(undefined);
     mockUseFilterActions.mockReturnValue({
       setSelectedFamilyMember: jest.fn(),
       resetFilters: jest.fn(),
@@ -194,14 +212,25 @@ describe('WeeklyDashboard', () => {
 
   it('shows loading state when data is loading', () => {
     mockUseWeekNavigation.mockReturnValue({
-      weekData: null,
-      isLoading: true,
+      currentWeek: new Date(),
+      weekStart: new Date(),
+      weekEnd: new Date(),
       isCurrentWeek: true,
+      weekRange: 'This Week',
       weekTitle: 'This Week',
       weekDays: [],
       goToPreviousWeek: jest.fn(),
       goToNextWeek: jest.fn(),
       goToCurrentWeek: jest.fn(),
+      goToSpecificWeek: jest.fn(),
+      weekData: undefined,
+      isNavigating: false,
+      isLoading: true,
+      previousWeekData: undefined,
+      nextWeekData: undefined,
+      formatDate: jest.fn(),
+      isDateToday: jest.fn(),
+      isDateInCurrentWeek: jest.fn(),
     });
 
     render(
@@ -216,14 +245,25 @@ describe('WeeklyDashboard', () => {
 
   it('shows error state when data fails to load', () => {
     mockUseWeekNavigation.mockReturnValue({
-      weekData: null,
-      isLoading: false,
+      currentWeek: new Date(),
+      weekStart: new Date(),
+      weekEnd: new Date(),
       isCurrentWeek: true,
+      weekRange: 'This Week',
       weekTitle: 'This Week',
       weekDays: [],
       goToPreviousWeek: jest.fn(),
       goToNextWeek: jest.fn(),
       goToCurrentWeek: jest.fn(),
+      goToSpecificWeek: jest.fn(),
+      weekData: undefined,
+      isNavigating: false,
+      isLoading: false,
+      previousWeekData: undefined,
+      nextWeekData: undefined,
+      formatDate: jest.fn(),
+      isDateToday: jest.fn(),
+      isDateInCurrentWeek: jest.fn(),
     });
 
     render(
@@ -237,7 +277,7 @@ describe('WeeklyDashboard', () => {
   });
 
   it('shows empty state for first-time users with no tasks', () => {
-    const emptyWeekData = {
+    const emptyWeekData: WeeklyDashboardData = {
       ...mockWeekData,
       days: mockWeekData.days.map(day => ({
         ...day,
@@ -252,14 +292,25 @@ describe('WeeklyDashboard', () => {
     };
 
     mockUseWeekNavigation.mockReturnValue({
-      weekData: emptyWeekData,
-      isLoading: false,
+      currentWeek: new Date(),
+      weekStart: new Date(),
+      weekEnd: new Date(),
       isCurrentWeek: true,
+      weekRange: 'This Week',
       weekTitle: 'This Week',
       weekDays: [],
       goToPreviousWeek: jest.fn(),
       goToNextWeek: jest.fn(),
       goToCurrentWeek: jest.fn(),
+      goToSpecificWeek: jest.fn(),
+      weekData: emptyWeekData,
+      isNavigating: false,
+      isLoading: false,
+      previousWeekData: undefined,
+      nextWeekData: undefined,
+      formatDate: jest.fn(),
+      isDateToday: jest.fn(),
+      isDateInCurrentWeek: jest.fn(),
     });
 
     render(
@@ -299,7 +350,7 @@ describe('WeeklyDashboard', () => {
   });
 
   it('shows family member filter on desktop when multiple members exist', () => {
-    const multiMemberData = {
+    const multiMemberData: WeeklyDashboardData = {
       ...mockWeekData,
       members: [
         mockWeekData.members[0],
@@ -318,14 +369,25 @@ describe('WeeklyDashboard', () => {
     };
 
     mockUseWeekNavigation.mockReturnValue({
-      weekData: multiMemberData,
-      isLoading: false,
+      currentWeek: new Date(),
+      weekStart: new Date(),
+      weekEnd: new Date(),
       isCurrentWeek: true,
+      weekRange: 'This Week',
       weekTitle: 'This Week',
       weekDays: [],
       goToPreviousWeek: jest.fn(),
       goToNextWeek: jest.fn(),
       goToCurrentWeek: jest.fn(),
+      goToSpecificWeek: jest.fn(),
+      weekData: multiMemberData,
+      isNavigating: false,
+      isLoading: false,
+      previousWeekData: undefined,
+      nextWeekData: undefined,
+      formatDate: jest.fn(),
+      isDateToday: jest.fn(),
+      isDateInCurrentWeek: jest.fn(),
     });
 
     render(
@@ -343,7 +405,7 @@ describe('WeeklyDashboard', () => {
   });
 
   it('handles responsive behavior on window resize', () => {
-    const multiMemberData = {
+    const multiMemberData: WeeklyDashboardData = {
       ...mockWeekData,
       members: [
         mockWeekData.members[0],
@@ -362,14 +424,25 @@ describe('WeeklyDashboard', () => {
     };
 
     mockUseWeekNavigation.mockReturnValue({
-      weekData: multiMemberData,
-      isLoading: false,
+      currentWeek: new Date(),
+      weekStart: new Date(),
+      weekEnd: new Date(),
       isCurrentWeek: true,
+      weekRange: 'This Week',
       weekTitle: 'This Week',
       weekDays: [],
       goToPreviousWeek: jest.fn(),
       goToNextWeek: jest.fn(),
       goToCurrentWeek: jest.fn(),
+      goToSpecificWeek: jest.fn(),
+      weekData: multiMemberData,
+      isNavigating: false,
+      isLoading: false,
+      previousWeekData: undefined,
+      nextWeekData: undefined,
+      formatDate: jest.fn(),
+      isDateToday: jest.fn(),
+      isDateInCurrentWeek: jest.fn(),
     });
 
     render(
@@ -404,20 +477,31 @@ describe('WeeklyDashboard', () => {
   });
 
   it('renders correctly with empty member list', () => {
-    const noMembersData = {
+    const noMembersData: WeeklyDashboardData = {
       ...mockWeekData,
       members: [],
     };
 
     mockUseWeekNavigation.mockReturnValue({
-      weekData: noMembersData,
-      isLoading: false,
+      currentWeek: new Date(),
+      weekStart: new Date(),
+      weekEnd: new Date(),
       isCurrentWeek: true,
+      weekRange: 'This Week',
       weekTitle: 'This Week',
       weekDays: [],
       goToPreviousWeek: jest.fn(),
       goToNextWeek: jest.fn(),
       goToCurrentWeek: jest.fn(),
+      goToSpecificWeek: jest.fn(),
+      weekData: noMembersData,
+      isNavigating: false,
+      isLoading: false,
+      previousWeekData: undefined,
+      nextWeekData: undefined,
+      formatDate: jest.fn(),
+      isDateToday: jest.fn(),
+      isDateInCurrentWeek: jest.fn(),
     });
 
     render(
