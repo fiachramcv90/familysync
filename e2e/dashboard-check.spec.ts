@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './utils/test-fixtures';
+import { navigateAsAuthenticatedUser } from './utils/auth-helpers';
 
 test('Dashboard loads without errors', async ({ page }) => {
   // Listen for console errors
@@ -9,8 +10,8 @@ test('Dashboard loads without errors', async ({ page }) => {
     }
   });
 
-  // Navigate to dashboard
-  await page.goto('http://localhost:3000/dashboard');
+  // Navigate to dashboard with authentication
+  await navigateAsAuthenticatedUser(page, '/dashboard');
   
   // Wait for the page to load
   await page.waitForLoadState('networkidle');
