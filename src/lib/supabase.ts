@@ -72,7 +72,7 @@ export const db = {
     async update(id: string, updates: any) {
       return supabase
         .from('families')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -117,7 +117,7 @@ export const db = {
     async update(id: string, updates: any) {
       return supabase
         .from('family_members')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -182,7 +182,7 @@ export const db = {
     async update(id: string, updates: any) {
       return supabase
         .from('tasks')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -254,7 +254,7 @@ export const db = {
     async update(id: string, updates: any) {
       return supabase
         .from('events')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();

@@ -105,7 +105,7 @@ const mockEvents: Event[] = [
   },
 ];
 
-// Task service mock (will be replaced with real API calls)
+// Task service with real API calls
 const taskService = {
   async getTasksForWeek(weekStart: Date): Promise<WeeklyDashboardData> {
     // Simulate API delay
@@ -205,25 +205,24 @@ const taskService = {
   },
 
   async updateTask(taskId: string, updates: UpdateTaskInput): Promise<Task> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    const response = await fetch(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
 
-    const task = mockTasks.find(t => t.id === taskId);
-    if (!task) {
-      throw new Error('Task not found');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 409) {
+        // Conflict - task has been modified
+        throw new Error(`Conflict: ${errorData.error || 'Task has been modified by another user'}`);
+      }
+      throw new Error(errorData.error || `Failed to update task: ${response.status}`);
     }
 
-    // Update the task with new values
-    Object.assign(task, updates);
-    task.updatedAt = new Date();
-    
-    if (updates.status === 'completed' && !task.completedAt) {
-      task.completedAt = new Date();
-    } else if (updates.status !== 'completed') {
-      task.completedAt = null;
-    }
-
-    return task;
+    return await response.json();
   },
 
   async getFamilyMembers(): Promise<FamilyMember[]> {
@@ -307,21 +306,80 @@ export const useUpdateTask = () => {
         if (!oldData) return oldData;
 
         const newData = { ...oldData };
+        
+        // Apply optimistic updates to tasks
         newData.days = newData.days.map(day => ({
           ...day,
-          tasks: day.tasks.map(task => 
-            task.id === taskId 
-              ? { 
-                  ...task, 
-                  ...updates, 
-                  dueDate: updates.dueDate 
-                    ? (typeof updates.dueDate === 'string' ? new Date(updates.dueDate) : updates.dueDate)
-                    : task.dueDate,
-                  updatedAt: new Date() 
+          tasks: day.tasks.map(task => {
+            if (task.id !== taskId) return task;
+
+            const updatedTask = { ...task };
+
+            // Apply all provided updates
+            Object.keys(updates).forEach(key => {
+              const value = updates[key as keyof UpdateTaskInput];
+              if (value !== undefined) {
+                if (key === 'dueDate' && value) {
+                  updatedTask.dueDate = typeof value === 'string' ? new Date(value) : value instanceof Date ? value : new Date(value);
+                } else if (key === 'completedAt' && value) {
+                  updatedTask.completedAt = typeof value === 'string' ? new Date(value) : value instanceof Date ? value : new Date(value);
+                } else {
+                  // Type-safe assignment for other fields
+                  Object.assign(updatedTask, { [key]: value });
                 }
-              : task
-          ),
+              }
+            });
+
+            // Auto-set completion timestamp when marking as completed
+            if (updates.status === 'completed' && !updatedTask.completedAt) {
+              updatedTask.completedAt = new Date();
+            } else if (updates.status && updates.status !== 'completed') {
+              updatedTask.completedAt = null;
+            }
+
+            updatedTask.updatedAt = new Date();
+            updatedTask.syncVersion = (updatedTask.syncVersion || 1) + 1;
+
+            return updatedTask;
+          }),
+          // Recalculate day summary counts
+          completedTaskCount: day.tasks.filter(t => 
+            t.id === taskId 
+              ? (updates.status === 'completed' || (updates.status === undefined && t.status === 'completed'))
+              : t.status === 'completed'
+          ).length,
         }));
+
+        // Update overall summary counts
+        if (newData.summary && updates.status) {
+          const originalTask = newData.days
+            .flatMap(day => day.tasks)
+            .find(task => task.id === taskId);
+
+          if (originalTask) {
+            const wasCompleted = originalTask.status === 'completed';
+            const willBeCompleted = updates.status === 'completed';
+            const wasPending = originalTask.status === 'pending';
+            const willBePending = updates.status === 'pending';
+
+            newData.summary = {
+              ...newData.summary,
+              completedTasks: newData.summary.completedTasks + 
+                (willBeCompleted && !wasCompleted ? 1 : 0) +
+                (!willBeCompleted && wasCompleted ? -1 : 0),
+              pendingTasks: newData.summary.pendingTasks +
+                (willBePending && !wasPending ? 1 : 0) +
+                (!willBePending && wasPending ? -1 : 0),
+            };
+
+            // Recalculate completion rate
+            const totalItems = newData.summary.totalTasks + newData.summary.totalEvents;
+            const completedItems = newData.summary.completedTasks + newData.summary.completedEvents;
+            newData.summary.completionRate = totalItems > 0 
+              ? Math.round((completedItems / totalItems) * 100) 
+              : 0;
+          }
+        }
 
         return newData;
       });

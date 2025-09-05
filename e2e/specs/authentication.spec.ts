@@ -5,7 +5,7 @@ test.describe('Authentication Flow', () => {
     // Skip if Supabase is not available (local development without proper credentials)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     if (!supabaseUrl || supabaseUrl === 'http://localhost:54321' || supabaseUrl.includes('your_supabase')) {
-      test.skip('Skipping authentication test - Supabase not properly configured');
+      test.skip(true, 'Skipping authentication test - Supabase not properly configured');
       return;
     }
 

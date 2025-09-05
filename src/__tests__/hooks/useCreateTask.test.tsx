@@ -42,8 +42,19 @@ describe('useCreateTask', () => {
       mutateAsync: mockCreateTaskMutation,
       mutate: jest.fn(),
       isPending: false,
+      isError: false,
+      isIdle: true,
+      isSuccess: false,
       error: null,
+      data: undefined,
+      variables: undefined,
+      status: 'idle' as const,
       reset: jest.fn(),
+      context: undefined,
+      failureCount: 0,
+      failureReason: null,
+      isPaused: false,
+      submittedAt: 0,
     });
   });
 
@@ -127,8 +138,19 @@ describe('useCreateTask', () => {
       mutateAsync: jest.fn(),
       mutate: jest.fn(),
       isPending: true,
+      isError: false,
+      isIdle: false,
+      isSuccess: false,
       error: null,
+      data: undefined,
+      variables: { title: 'test', assigneeId: 'user-1', priority: 'medium', category: 'task' },
+      status: 'pending' as const,
       reset: jest.fn(),
+      context: undefined,
+      failureCount: 0,
+      failureReason: null,
+      isPaused: false,
+      submittedAt: Date.now(),
     });
 
     const { result } = renderHook(() => useCreateTask(), {
@@ -144,8 +166,19 @@ describe('useCreateTask', () => {
       mutateAsync: jest.fn(),
       mutate: jest.fn(),
       isPending: false,
+      isError: true,
+      isIdle: false,
+      isSuccess: false,
       error,
+      data: undefined,
+      variables: { title: 'test', assigneeId: 'user-1', priority: 'medium', category: 'task' },
+      status: 'error' as const,
       reset: jest.fn(),
+      context: undefined,
+      failureCount: 1,
+      failureReason: error,
+      isPaused: false,
+      submittedAt: Date.now(),
     });
 
     const { result } = renderHook(() => useCreateTask(), {
@@ -161,8 +194,19 @@ describe('useCreateTask', () => {
       mutateAsync: jest.fn(),
       mutate: jest.fn(),
       isPending: false,
+      isError: false,
+      isIdle: false,
+      isSuccess: true,
       error: null,
+      data: { id: 'task-1', title: 'test', status: 'pending', assigneeId: 'user-1' } as any,
+      variables: { title: 'test', assigneeId: 'user-1', priority: 'medium', category: 'task' },
+      status: 'success' as const,
       reset: mockReset,
+      context: undefined,
+      failureCount: 0,
+      failureReason: null,
+      isPaused: false,
+      submittedAt: Date.now(),
     });
 
     const { result } = renderHook(() => useCreateTask(), {

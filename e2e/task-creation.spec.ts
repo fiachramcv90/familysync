@@ -5,7 +5,7 @@ test.describe('Task Creation Flow', () => {
     // Skip entire suite if Supabase is not available 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     if (!supabaseUrl || supabaseUrl === 'http://localhost:54321' || supabaseUrl.includes('your_supabase')) {
-      test.skip('Skipping task creation tests - Supabase not properly configured');
+      test.skip(true, 'Skipping task creation tests - Supabase not properly configured');
       return;
     }
 
@@ -22,7 +22,7 @@ test.describe('Task Creation Flow', () => {
     const fabVisible = await fabButton.isVisible({ timeout: 5000 }).catch(() => false)
     
     if (!fabVisible) {
-      test.skip('User not authenticated - FAB button not found')
+      test.skip(true, 'User not authenticated - FAB button not found')
       return
     }
 
@@ -41,7 +41,7 @@ test.describe('Task Creation Flow', () => {
     const fabVisible = await fabButton.isVisible({ timeout: 5000 }).catch(() => false)
     
     if (!fabVisible) {
-      test.skip('User not authenticated - cannot access task creation')
+      test.skip(true, 'User not authenticated - cannot access task creation')
       return
     }
 
@@ -83,7 +83,7 @@ test.describe('Task Creation Flow', () => {
     const fabVisible = await fabButton.isVisible({ timeout: 5000 }).catch(() => false)
     
     if (!fabVisible) {
-      test.skip('User not authenticated - cannot access task creation')
+      test.skip(true, 'User not authenticated - cannot access task creation')
       return
     }
 
@@ -95,7 +95,7 @@ test.describe('Task Creation Flow', () => {
     const btnVisible = await createTaskBtn.isVisible({ timeout: 2000 }).catch(() => false)
     
     if (!btnVisible) {
-      test.skip('Create Task button not found - modal structure may differ')
+      test.skip(true, 'Create Task button not found - modal structure may differ')
       return
     }
     
@@ -132,7 +132,7 @@ test.describe('Task Creation Flow', () => {
     const fabVisible = await fabButton.isVisible({ timeout: 5000 }).catch(() => false)
     
     if (!fabVisible) {
-      test.skip('User not authenticated - cannot access task creation')
+      test.skip(true, 'User not authenticated - cannot access task creation')
       return
     }
 
@@ -196,7 +196,7 @@ test.describe('Task Creation Flow', () => {
     const fabVisible = await fabButton.isVisible({ timeout: 5000 }).catch(() => false)
     
     if (!fabVisible) {
-      test.skip('User not authenticated - cannot access task creation')
+      test.skip(true, 'User not authenticated - cannot access task creation')
       return
     }
     
@@ -215,7 +215,7 @@ test.describe('Task Creation Flow', () => {
     const titleVisible = await titleField.isVisible({ timeout: 2000 }).catch(() => false)
     
     if (!titleVisible) {
-      test.skip('Task creation form not available - modal structure may differ')
+      test.skip(true, 'Task creation form not available - modal structure may differ')
       return
     }
     
@@ -239,7 +239,7 @@ test.describe('Task Creation Flow', () => {
       await expect(modal).not.toBeVisible()
       await expect(page.getByText('Mobile task')).toBeVisible()
     } else {
-      test.skip('Create Task button not found - cannot complete mobile test')
+      test.skip(true, 'Create Task button not found - cannot complete mobile test')
     }
   })
 })

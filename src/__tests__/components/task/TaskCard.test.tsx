@@ -89,7 +89,7 @@ describe('TaskCard', () => {
       </TestWrapper>
     );
 
-    const checkbox = screen.getByLabelText('Mark as complete');
+    const checkbox = screen.getByLabelText('Start task');
     expect(checkbox).toBeInTheDocument();
     expect(checkbox).not.toHaveClass('bg-green-500');
   });
@@ -107,7 +107,7 @@ describe('TaskCard', () => {
       </TestWrapper>
     );
 
-    const checkbox = screen.getByLabelText('Mark as incomplete');
+    const checkbox = screen.getByLabelText('Reset task');
     expect(checkbox).toBeInTheDocument();
     expect(checkbox).toHaveClass('bg-green-500');
   });
@@ -119,13 +119,13 @@ describe('TaskCard', () => {
       </TestWrapper>
     );
 
-    const checkbox = screen.getByLabelText('Mark as complete');
+    const checkbox = screen.getByLabelText('Start task');
     fireEvent.click(checkbox);
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
         taskId: '1',
-        updates: { status: 'completed' },
+        updates: { status: 'in_progress' },
       });
     });
   });
@@ -267,7 +267,7 @@ describe('TaskCard', () => {
       </TestWrapper>
     );
 
-    const checkbox = screen.getByLabelText('Mark as complete');
+    const checkbox = screen.getByLabelText('Start task');
     
     // Click multiple times quickly
     fireEvent.click(checkbox);
@@ -304,7 +304,7 @@ describe('TaskCard', () => {
       </TestWrapper>
     );
 
-    const checkbox = screen.getByLabelText('Mark as complete');
-    expect(checkbox).toHaveAttribute('aria-label', 'Mark as complete');
+    const checkbox = screen.getByLabelText('Start task');
+    expect(checkbox).toHaveAttribute('aria-label', 'Start task');
   });
 });
