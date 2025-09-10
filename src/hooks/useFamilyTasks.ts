@@ -1,298 +1,357 @@
-// React Query hook for Family Tasks
-// Story 1.4: Basic Family Dashboard
+// React Query hook for Family Tasks with Real Supabase Integration
+// Story S1.2: Replace Mock Data with Real Supabase Integration
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Task, Event, WeeklyDashboardData, WeeklyTaskView, UpdateTaskInput, CreateTaskInput } from '@/types/task';
 import { FamilyMember } from '@/types/family';
+import { db, supabase } from '@/lib/supabase';
+import { useAuthenticatedUser, requireFamilyContext, requireUserId } from '@/hooks/useAuthenticatedUser';
 
-// Mock data for development until backend is ready
-const mockFamilyMembers: FamilyMember[] = [
-  {
-    id: '1',
-    familyId: 'family-1',
-    email: 'mom@family.com',
-    name: 'Mom',
-    role: 'admin',
-    avatarColor: '#EF4444', // red-500
-    isActive: true,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    lastSeenAt: new Date(),
-  },
-  {
-    id: '2',
-    familyId: 'family-1',
-    email: 'dad@family.com',
-    name: 'Dad',
-    role: 'admin',
-    avatarColor: '#3B82F6', // blue-500
-    isActive: true,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    lastSeenAt: new Date(),
-  },
-  {
-    id: '3',
-    familyId: 'family-1',
-    email: 'teen@family.com',
-    name: 'Alex',
-    role: 'member',
-    avatarColor: '#10B981', // emerald-500
-    isActive: true,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    lastSeenAt: new Date(),
-  },
-];
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    familyId: 'family-1',
-    title: 'Buy groceries',
-    description: 'Get items for dinner this week',
-    assigneeId: '1',
-    createdById: '2',
-    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-    completedAt: null,
-    status: 'pending',
+// Data transformation functions from database to domain models
+const transformTaskFromDB = (dbTask: any): Task => {
+  return {
+    id: dbTask.id,
+    familyId: dbTask.family_id,
+    title: dbTask.title,
+    description: dbTask.description,
+    assigneeId: dbTask.assignee_id,
+    createdById: dbTask.created_by,
+    dueDate: dbTask.due_date ? new Date(dbTask.due_date) : null,
+    completedAt: dbTask.completed_at ? new Date(dbTask.completed_at) : null,
+    status: dbTask.status || 'pending',
     category: 'task',
-    priority: 'high',
-    syncVersion: 1,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    assignee: mockFamilyMembers[0],
-    createdBy: mockFamilyMembers[1],
-  },
-  {
-    id: '3',
-    familyId: 'family-1',
-    title: 'Clean garage',
-    description: 'Organize tools and storage',
-    assigneeId: '2',
-    createdById: '1',
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-    completedAt: null,
-    status: 'in_progress',
-    category: 'task',
-    priority: 'low',
-    syncVersion: 1,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    assignee: mockFamilyMembers[1],
-    createdBy: mockFamilyMembers[0],
-  },
-];
+    priority: dbTask.priority || 'medium',
+    syncVersion: dbTask.sync_version || 1,
+    createdAt: new Date(dbTask.created_at),
+    updatedAt: new Date(dbTask.updated_at),
+    assignee: dbTask.assignee ? transformFamilyMemberFromDB(dbTask.assignee) : undefined,
+    createdBy: dbTask.created_by_member ? transformFamilyMemberFromDB(dbTask.created_by_member) : undefined,
+  };
+};
 
-const mockEvents: Event[] = [
-  {
-    id: '2',
-    familyId: 'family-1',
-    title: 'Soccer practice',
-    description: 'Team practice at the park',
-    assigneeId: '3',
-    createdById: '1',
-    startDateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    endDateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // 2 hours later
-    location: 'Community Park',
-    status: 'scheduled',
-    syncVersion: 1,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    assignee: mockFamilyMembers[2],
-    createdBy: mockFamilyMembers[0],
-  },
-];
+const transformEventFromDB = (dbEvent: any): Event => {
+  return {
+    id: dbEvent.id,
+    familyId: dbEvent.family_id,
+    title: dbEvent.title,
+    description: dbEvent.description,
+    assigneeId: dbEvent.assignee_id,
+    createdById: dbEvent.created_by,
+    startDateTime: new Date(dbEvent.start_datetime),
+    endDateTime: new Date(dbEvent.end_datetime || dbEvent.start_datetime),
+    location: dbEvent.location,
+    status: dbEvent.status || 'scheduled',
+    syncVersion: dbEvent.sync_version || 1,
+    createdAt: new Date(dbEvent.created_at),
+    updatedAt: new Date(dbEvent.updated_at),
+    assignee: dbEvent.assignee ? transformFamilyMemberFromDB(dbEvent.assignee) : undefined,
+    createdBy: dbEvent.created_by_member ? transformFamilyMemberFromDB(dbEvent.created_by_member) : undefined,
+  };
+};
 
-// Task service with real API calls
+const transformFamilyMemberFromDB = (dbMember: any): FamilyMember => {
+  return {
+    id: dbMember.id,
+    familyId: dbMember.family_id,
+    email: dbMember.email,
+    name: dbMember.display_name || dbMember.name,
+    role: dbMember.role || 'member',
+    avatarColor: dbMember.avatar_color || '#3B82F6',
+    isActive: dbMember.is_active !== false,
+    createdAt: new Date(dbMember.created_at),
+    updatedAt: new Date(dbMember.updated_at),
+    lastSeenAt: dbMember.last_seen_at ? new Date(dbMember.last_seen_at) : new Date(),
+  };
+};
+
+// Task service with real Supabase queries
 const taskService = {
-  async getTasksForWeek(weekStart: Date): Promise<WeeklyDashboardData> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 300));
+  async getTasksForWeek(weekStart: Date, familyId: string): Promise<WeeklyDashboardData> {
+    try {
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 }); // Monday start
+      const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+      const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
-    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 }); // Monday start
-    const days: WeeklyTaskView[] = [];
+      // Fetch tasks for the week with family_id filtering
+      const { data: tasksData, error: tasksError } = await db.tasks.getByFamilyId(familyId, {
+        due_date_from: weekStartStr,
+        due_date_to: weekEndStr
+      });
 
-    // Generate 7 days for the week
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(weekStart);
-      currentDate.setDate(weekStart.getDate() + i);
-      
-      // Filter tasks for this day
-      const dayTasks = mockTasks.filter(task => {
-        if (!task.dueDate) return false;
-        const taskDate = format(task.dueDate, 'yyyy-MM-dd');
+      if (tasksError) {
+        throw new Error(`Failed to fetch tasks: ${tasksError.message}`);
+      }
+
+      // Fetch events for the week with family_id filtering
+      const { data: eventsData, error: eventsError } = await db.events.getByFamilyId(familyId, {
+        start_date_from: weekStartStr,
+        start_date_to: weekEndStr
+      });
+
+      if (eventsError) {
+        throw new Error(`Failed to fetch events: ${eventsError.message}`);
+      }
+
+      // Fetch family members for the family
+      const { data: membersData, error: membersError } = await db.familyMembers.getByFamilyId(familyId);
+
+      if (membersError) {
+        throw new Error(`Failed to fetch family members: ${membersError.message}`);
+      }
+
+      // Transform database records to domain models
+      const allTasks = (tasksData || []).map(transformTaskFromDB);
+      const allEvents = (eventsData || []).map(transformEventFromDB);
+      const familyMembers = (membersData || []).map(transformFamilyMemberFromDB);
+
+      // Generate 7 days for the week
+      const days: WeeklyTaskView[] = [];
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(weekStart);
+        currentDate.setDate(weekStart.getDate() + i);
         const currentDateStr = format(currentDate, 'yyyy-MM-dd');
-        return taskDate === currentDateStr;
-      });
+        
+        // Filter tasks for this day
+        const dayTasks = allTasks.filter(task => {
+          if (!task.dueDate) return false;
+          const taskDate = format(task.dueDate, 'yyyy-MM-dd');
+          return taskDate === currentDateStr;
+        });
 
-      // Filter events for this day
-      const dayEvents = mockEvents.filter(event => {
-        const eventDate = format(event.startDateTime, 'yyyy-MM-dd');
-        const currentDateStr = format(currentDate, 'yyyy-MM-dd');
-        return eventDate === currentDateStr;
-      });
+        // Filter events for this day
+        const dayEvents = allEvents.filter(event => {
+          const eventDate = format(event.startDateTime, 'yyyy-MM-dd');
+          return eventDate === currentDateStr;
+        });
 
-      days.push({
-        date: format(currentDate, 'yyyy-MM-dd'),
-        dayName: format(currentDate, 'EEEE'),
-        tasks: dayTasks,
-        events: dayEvents,
-        taskCount: dayTasks.length,
-        eventCount: dayEvents.length,
-        completedTaskCount: dayTasks.filter(t => t.status === 'completed').length,
-        overdueTaskCount: dayTasks.filter(t => 
-          t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
-        ).length,
-      });
+        days.push({
+          date: currentDateStr,
+          dayName: format(currentDate, 'EEEE'),
+          tasks: dayTasks,
+          events: dayEvents,
+          taskCount: dayTasks.length,
+          eventCount: dayEvents.length,
+          completedTaskCount: dayTasks.filter(t => t.status === 'completed').length,
+          overdueTaskCount: dayTasks.filter(t => 
+            t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
+          ).length,
+        });
+      }
+
+      const completedTasks = allTasks.filter(t => t.status === 'completed');
+      const completedEvents = allEvents.filter(e => e.status === 'completed');
+      const overdueTasks = allTasks.filter(t => 
+        t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
+      );
+
+      const totalItems = allTasks.length + allEvents.length;
+      const completedItems = completedTasks.length + completedEvents.length;
+
+      return {
+        weekStartDate: weekStartStr,
+        weekEndDate: weekEndStr,
+        days,
+        summary: {
+          totalTasks: allTasks.length,
+          completedTasks: completedTasks.length,
+          overdueTasks: overdueTasks.length,
+          pendingTasks: allTasks.filter(t => t.status === 'pending').length,
+          totalEvents: allEvents.length,
+          completedEvents: completedEvents.length,
+          upcomingEvents: allEvents.filter(e => 
+            e.startDateTime > new Date() && e.status === 'scheduled'
+          ).length,
+          completionRate: totalItems > 0 ? 
+            Math.round((completedItems / totalItems) * 100) : 0,
+        },
+        members: familyMembers.map(member => {
+          const memberTasks = allTasks.filter(t => t.assigneeId === member.id);
+          const memberEvents = allEvents.filter(e => e.assigneeId === member.id);
+          const memberTasksCompleted = memberTasks.filter(t => t.status === 'completed');
+          const memberEventsCompleted = memberEvents.filter(e => e.status === 'completed');
+          const memberOverdue = memberTasks.filter(t => 
+            t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
+          );
+          
+          const totalAssigned = memberTasks.length + memberEvents.length;
+          const totalCompleted = memberTasksCompleted.length + memberEventsCompleted.length;
+          
+          return {
+            memberId: member.id,
+            memberName: member.name,
+            avatarColor: member.avatarColor,
+            tasksAssigned: memberTasks.length,
+            tasksCompleted: memberTasksCompleted.length,
+            eventsAssigned: memberEvents.length,
+            eventsCompleted: memberEventsCompleted.length,
+            completionRate: totalAssigned > 0 ? 
+              Math.round((totalCompleted / totalAssigned) * 100) : 0,
+            overdueCount: memberOverdue.length,
+          };
+        }),
+      };
+    } catch (error) {
+      console.error('Error fetching weekly tasks:', error);
+      throw error;
     }
-
-    const allTasks = mockTasks;
-    const allEvents = mockEvents;
-    const completedTasks = allTasks.filter(t => t.status === 'completed');
-    const completedEvents = allEvents.filter(e => e.status === 'completed');
-    const overdueTasks = allTasks.filter(t => 
-      t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
-    );
-
-    const totalItems = allTasks.length + allEvents.length;
-    const completedItems = completedTasks.length + completedEvents.length;
-
-    return {
-      weekStartDate: format(weekStart, 'yyyy-MM-dd'),
-      weekEndDate: format(weekEnd, 'yyyy-MM-dd'),
-      days,
-      summary: {
-        totalTasks: allTasks.length,
-        completedTasks: completedTasks.length,
-        overdueTasks: overdueTasks.length,
-        pendingTasks: allTasks.filter(t => t.status === 'pending').length,
-        totalEvents: allEvents.length,
-        completedEvents: completedEvents.length,
-        upcomingEvents: allEvents.filter(e => 
-          e.startDateTime > new Date() && e.status === 'scheduled'
-        ).length,
-        completionRate: totalItems > 0 ? 
-          Math.round((completedItems / totalItems) * 100) : 0,
-      },
-      members: mockFamilyMembers.map(member => {
-        const memberTasks = allTasks.filter(t => t.assigneeId === member.id);
-        const memberEvents = allEvents.filter(e => e.assigneeId === member.id);
-        const memberTasksCompleted = memberTasks.filter(t => t.status === 'completed');
-        const memberEventsCompleted = memberEvents.filter(e => e.status === 'completed');
-        const memberOverdue = memberTasks.filter(t => 
-          t.dueDate && t.dueDate < new Date() && t.status !== 'completed'
-        );
-        
-        const totalAssigned = memberTasks.length + memberEvents.length;
-        const totalCompleted = memberTasksCompleted.length + memberEventsCompleted.length;
-        
-        return {
-          memberId: member.id,
-          memberName: member.name,
-          avatarColor: member.avatarColor,
-          tasksAssigned: memberTasks.length,
-          tasksCompleted: memberTasksCompleted.length,
-          eventsAssigned: memberEvents.length,
-          eventsCompleted: memberEventsCompleted.length,
-          completionRate: totalAssigned > 0 ? 
-            Math.round((totalCompleted / totalAssigned) * 100) : 0,
-          overdueCount: memberOverdue.length,
-        };
-      }),
-    };
   },
 
   async updateTask(taskId: string, updates: UpdateTaskInput): Promise<Task> {
-    const response = await fetch(`/api/tasks/${taskId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      if (response.status === 409) {
-        // Conflict - task has been modified
-        throw new Error(`Conflict: ${errorData.error || 'Task has been modified by another user'}`);
+    try {
+      const updateData: any = {};
+      
+      if (updates.title !== undefined) updateData.title = updates.title;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.assigneeId !== undefined) updateData.assignee_id = updates.assigneeId;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.dueDate !== undefined) {
+        updateData.due_date = updates.dueDate ? format(new Date(updates.dueDate), 'yyyy-MM-dd') : null;
       }
-      throw new Error(errorData.error || `Failed to update task: ${response.status}`);
+      if (updates.completedAt !== undefined) {
+        updateData.completed_at = updates.completedAt ? new Date(updates.completedAt).toISOString() : null;
+      }
+      
+      // Auto-set completion timestamp when marking as completed
+      if (updates.status === 'completed' && !updates.completedAt) {
+        updateData.completed_at = new Date().toISOString();
+      } else if (updates.status && updates.status !== 'completed') {
+        updateData.completed_at = null;
+      }
+
+      const { data, error } = await db.tasks.update(taskId, updateData);
+      
+      if (error) {
+        if (error.message.includes('conflict') || error.message.includes('version')) {
+          throw new Error(`Conflict: Task has been modified by another user`);
+        }
+        throw new Error(`Failed to update task: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('No data returned from task update');
+      }
+
+      // Fetch the complete updated task with relationships
+      const { data: completeTask, error: fetchError } = await db.tasks.getById(taskId);
+      
+      if (fetchError || !completeTask) {
+        throw new Error('Failed to fetch updated task details');
+      }
+
+      return transformTaskFromDB(completeTask);
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
     }
-
-    return await response.json();
   },
 
-  async getFamilyMembers(): Promise<FamilyMember[]> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    return [...mockFamilyMembers];
+  async getFamilyMembers(familyId: string): Promise<FamilyMember[]> {
+    try {
+      const { data, error } = await db.familyMembers.getByFamilyId(familyId);
+      
+      if (error) {
+        throw new Error(`Failed to fetch family members: ${error.message}`);
+      }
+
+      return (data || []).map(transformFamilyMemberFromDB);
+    } catch (error) {
+      console.error('Error fetching family members:', error);
+      throw error;
+    }
   },
 
-  async createTask(input: CreateTaskInput): Promise<Task> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 400));
+  async createTask(input: CreateTaskInput, familyId: string, createdById: string): Promise<Task> {
+    try {
+      const taskData = {
+        family_id: familyId,
+        title: input.title,
+        description: input.description || null,
+        assignee_id: input.assigneeId,
+        created_by: createdById,
+        due_date: input.dueDate ? format(new Date(input.dueDate), 'yyyy-MM-dd') : null,
+        status: 'pending' as const,
+        // Note: category and priority may need to be added to database schema
+      };
 
-    // Create new task with generated ID
-    const newTask: Task = {
-      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      familyId: 'family-1',
-      title: input.title,
-      description: input.description || null,
-      assigneeId: input.assigneeId,
-      createdById: '2', // Current user mock
-      dueDate: input.dueDate ? new Date(input.dueDate) : null,
-      completedAt: null,
-      status: 'pending',
-      category: input.category || 'task',
-      priority: input.priority || 'medium',
-      syncVersion: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      assignee: mockFamilyMembers.find(m => m.id === input.assigneeId),
-      createdBy: mockFamilyMembers.find(m => m.id === '2'),
-    };
+      const { data, error } = await db.tasks.create(taskData);
+      
+      if (error) {
+        throw new Error(`Failed to create task: ${error.message}`);
+      }
 
-    // Add to mock tasks array
-    mockTasks.push(newTask);
+      if (!data) {
+        throw new Error('No data returned from task creation');
+      }
 
-    return newTask;
+      // Fetch the complete task with relationships
+      const { data: completeTask, error: fetchError } = await db.tasks.getById(data.id);
+      
+      if (fetchError || !completeTask) {
+        throw new Error('Failed to fetch created task details');
+      }
+
+      return transformTaskFromDB(completeTask);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
   },
 };
 
 // React Query hook for fetching weekly tasks
 export const useFamilyTasks = (weekStart: Date) => {
+  const { familyId, isAuthenticated, isLoading, error } = useAuthenticatedUser();
   const weekString = format(startOfWeek(weekStart, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   
   return useQuery({
-    queryKey: ['tasks', 'week', weekString],
-    queryFn: () => taskService.getTasksForWeek(startOfWeek(weekStart, { weekStartsOn: 1 })),
+    queryKey: ['tasks', 'week', weekString, familyId],
+    queryFn: () => {
+      if (!familyId) {
+        throw new Error('Family context required');
+      }
+      return taskService.getTasksForWeek(startOfWeek(weekStart, { weekStartsOn: 1 }), familyId);
+    },
+    enabled: isAuthenticated && !!familyId && !isLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
     refetchOnWindowFocus: true,
     refetchOnMount: 'always',
+    throwOnError: false, // Handle errors in components
   });
 };
 
 // React Query hook for fetching family members
 export const useFamilyMembers = () => {
+  const { familyId, isAuthenticated, isLoading, error } = useAuthenticatedUser();
+  
   return useQuery({
-    queryKey: ['family', 'members'],
-    queryFn: () => taskService.getFamilyMembers(),
+    queryKey: ['family', 'members', familyId],
+    queryFn: () => {
+      if (!familyId) {
+        throw new Error('Family context required');
+      }
+      return taskService.getFamilyMembers(familyId);
+    },
+    enabled: isAuthenticated && !!familyId && !isLoading,
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
+    throwOnError: false, // Handle errors in components
   });
 };
 
 // Mutation hook for updating tasks with optimistic updates
 export const useUpdateTask = () => {
   const queryClient = useQueryClient();
+  const { isAuthenticated, familyId } = useAuthenticatedUser();
 
   return useMutation({
-    mutationFn: ({ taskId, updates }: { taskId: string; updates: UpdateTaskInput }) =>
-      taskService.updateTask(taskId, updates),
+    mutationFn: ({ taskId, updates }: { taskId: string; updates: UpdateTaskInput }) => {
+      if (!isAuthenticated || !familyId) {
+        throw new Error('Authentication and family context required');
+      }
+      return taskService.updateTask(taskId, updates);
+    },
     
     onMutate: async ({ taskId, updates }) => {
       // Cancel any outgoing refetches
@@ -407,11 +466,21 @@ export const useUpdateTask = () => {
 // Mutation hook for creating tasks with optimistic updates
 export const useCreateTaskMutation = () => {
   const queryClient = useQueryClient();
+  const { familyId, user } = useAuthenticatedUser();
 
   return useMutation({
-    mutationFn: (input: CreateTaskInput) => taskService.createTask(input),
+    mutationFn: (input: CreateTaskInput) => {
+      if (!familyId || !user) {
+        throw new Error('Authentication and family context required');
+      }
+      return taskService.createTask(input, familyId, user.id);
+    },
     
     onMutate: async (newTaskInput) => {
+      if (!familyId || !user) {
+        throw new Error('Authentication and family context required for optimistic update');
+      }
+      
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['tasks'] });
 
@@ -424,11 +493,11 @@ export const useCreateTaskMutation = () => {
       // Create optimistic task
       const optimisticTask: Task = {
         id: optimisticId,
-        familyId: 'family-1',
+        familyId: familyId || '',
         title: newTaskInput.title,
         description: newTaskInput.description || null,
         assigneeId: newTaskInput.assigneeId,
-        createdById: '2', // Current user mock
+        createdById: user?.id || '',
         dueDate: newTaskInput.dueDate ? new Date(newTaskInput.dueDate) : null,
         completedAt: null,
         status: 'pending',
@@ -437,8 +506,7 @@ export const useCreateTaskMutation = () => {
         syncVersion: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
-        assignee: mockFamilyMembers.find(m => m.id === newTaskInput.assigneeId),
-        createdBy: mockFamilyMembers.find(m => m.id === '2'),
+        // Note: assignee and createdBy will be populated by the server response
       };
 
       // Optimistically update all relevant weekly queries
