@@ -1,0 +1,50 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "FamilySync" [ref=e6] [cursor=pointer]:
+          - /url: /
+        - link "Sign In" [ref=e8] [cursor=pointer]:
+          - /url: /auth
+    - main [ref=e9]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - heading "Create your account" [level=2] [ref=e13]
+          - paragraph [ref=e14]:
+            - text: Or
+            - link "sign in to existing account" [ref=e15] [cursor=pointer]:
+              - /url: /auth/login
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]:
+              - generic [ref=e19]: Full Name
+              - textbox "Full Name" [ref=e20]: Test User
+            - generic [ref=e21]:
+              - generic [ref=e22]: Email Address
+              - textbox "Email Address" [ref=e23]: test-1757534669934@example.com
+            - generic [ref=e24]:
+              - generic [ref=e25]: Family Name (optional)
+              - textbox "Family Name (optional)" [ref=e26]: Test Family
+              - paragraph [ref=e27]: Leave blank to use default family name
+            - generic [ref=e28]:
+              - generic [ref=e29]: Password
+              - textbox "Password" [active] [ref=e30]
+              - paragraph [ref=e31]: Must be at least 8 characters with uppercase, lowercase, and numbers
+            - generic [ref=e32]:
+              - generic [ref=e33]: Confirm Password
+              - textbox "Confirm Password" [ref=e34]
+          - button "Create account" [ref=e36]
+          - generic [ref=e37]:
+            - text: By creating an account, you agree to our
+            - link "Terms of Service" [ref=e38] [cursor=pointer]:
+              - /url: "#"
+            - text: and
+            - link "Privacy Policy" [ref=e39] [cursor=pointer]:
+              - /url: "#"
+    - contentinfo [ref=e40]:
+      - paragraph [ref=e43]: © 2025 FamilySync. Family coordination made simple.
+  - alert [ref=e44]
+```
