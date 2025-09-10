@@ -26,7 +26,7 @@ test.describe('Login Test with Demo User', () => {
     
     // Fill in the demo user credentials
     await emailInput.fill('demo@familysync.app');
-    await passwordInput.fill('DemoPass123');
+    await passwordInput.fill('NewDemo123');
     
     console.log('Credentials entered, clicking submit...');
     

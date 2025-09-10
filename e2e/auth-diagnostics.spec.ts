@@ -92,7 +92,7 @@ class AuthenticationDiagnostics {
       const result = await this.page.evaluate(async () => {
         try {
           // Try to import and test Supabase connection
-          const { createClient } = await import('/src/lib/supabase')
+          const { createClient } = await import('../src/lib/supabase')
           const supabase = createClient()
           
           // Test a simple query

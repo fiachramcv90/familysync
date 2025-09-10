@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
@@ -39,8 +39,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
+    // Get user profile using service role client to bypass RLS
+    const serviceSupabase = await createServiceRoleClient()
+    const { data: profile, error: profileError } = await serviceSupabase
       .from('family_members')
       .select(`
         id,
@@ -67,8 +68,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update last_seen_at
-    await supabase
+    // Update last_seen_at using service role client
+    await serviceSupabase
       .from('family_members')
       .update({ last_seen_at: new Date().toISOString() })
       .eq('user_id', authData.user.id)
