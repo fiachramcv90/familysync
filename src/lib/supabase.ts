@@ -1,29 +1,110 @@
 // Supabase client configuration for FamilySync application
 // Story 1.3: Database Schema and Models integrated with main application
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
+// Explicit type definitions for database operations
+export interface FamilyInsert {
+  id?: string
+  name: string
+  invite_code: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface FamilyUpdate {
+  id?: string
+  name?: string
+  invite_code?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface FamilyMemberInsert {
+  id?: string
+  family_id: string
+  user_id: string
+  email: string
+  role?: 'admin' | 'member'
+  display_name: string
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface FamilyMemberUpdate {
+  id?: string
+  family_id?: string
+  user_id?: string
+  email?: string
+  role?: 'admin' | 'member'
+  display_name?: string
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface TaskInsert {
+  id?: string
+  family_id: string
+  title: string
+  description?: string | null
+  status?: 'pending' | 'in_progress' | 'completed'
+  assignee_id?: string | null
+  due_date?: string | null
+  created_by: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface TaskUpdate {
+  id?: string
+  family_id?: string
+  title?: string
+  description?: string | null
+  status?: 'pending' | 'in_progress' | 'completed'
+  assignee_id?: string | null
+  due_date?: string | null
+  created_by?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface EventInsert {
+  id?: string
+  family_id: string
+  title: string
+  description?: string | null
+  start_datetime: string
+  end_datetime?: string | null
+  assignee_id?: string | null
+  created_by: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface EventUpdate {
+  id?: string
+  family_id?: string
+  title?: string
+  description?: string | null
+  start_datetime?: string
+  end_datetime?: string | null
+  assignee_id?: string | null
+  created_by?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export function createClient() {
-  return createBrowserClient<Database>(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 10
-        }
-      }
-    }
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
 
-// Legacy support - export a default client instance for compatibility
+// Create properly typed client
 export const supabase = createClient()
 
 // Test connection function from Story 1.1
@@ -61,7 +142,7 @@ export const db = {
         .single();
     },
     
-    async create(family: any) {
+    async create(family: FamilyInsert) {
       return supabase
         .from('families')
         .insert(family)
@@ -69,10 +150,10 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: any) {
+    async update(id: string, updates: FamilyUpdate) {
       return supabase
         .from('families')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
@@ -106,7 +187,7 @@ export const db = {
         .single();
     },
     
-    async create(member: any) {
+    async create(member: FamilyMemberInsert) {
       return supabase
         .from('family_members')
         .insert(member)
@@ -114,10 +195,10 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: any) {
+    async update(id: string, updates: FamilyMemberUpdate) {
       return supabase
         .from('family_members')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
@@ -126,7 +207,12 @@ export const db = {
 
   // Task operations
   tasks: {
-    async getByFamilyId(familyId: string, filters?: any) {
+    async getByFamilyId(familyId: string, filters?: {
+      status?: string | string[]
+      assignee_id?: string
+      due_date_from?: string
+      due_date_to?: string
+    }) {
       let query = supabase
         .from('tasks')
         .select(`
@@ -171,7 +257,7 @@ export const db = {
         .single();
     },
     
-    async create(task: any) {
+    async create(task: TaskInsert) {
       return supabase
         .from('tasks')
         .insert(task)
@@ -179,10 +265,10 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: any) {
+    async update(id: string, updates: TaskUpdate) {
       return supabase
         .from('tasks')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
@@ -198,7 +284,12 @@ export const db = {
 
   // Event operations
   events: {
-    async getByFamilyId(familyId: string, filters?: any) {
+    async getByFamilyId(familyId: string, filters?: {
+      status?: string | string[]
+      assignee_id?: string
+      start_date_from?: string
+      start_date_to?: string
+    }) {
       let query = supabase
         .from('events')
         .select(`
@@ -243,7 +334,7 @@ export const db = {
         .single();
     },
     
-    async create(event: any) {
+    async create(event: EventInsert) {
       return supabase
         .from('events')
         .insert(event)
@@ -251,10 +342,10 @@ export const db = {
         .single();
     },
     
-    async update(id: string, updates: any) {
+    async update(id: string, updates: EventUpdate) {
       return supabase
         .from('events')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();

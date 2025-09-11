@@ -1,0 +1,17 @@
+fiachramcvicker@Fiachras-MacBook-Pro simple-todo-app-bmad %  supabase --version
+2.39.2
+fiachramcvicker@Fiachras-MacBook-Pro simple-todo-app-bmad % supabase login
+Hello from Supabase! Press Enter to open browser and login automatically.
+
+Here is your login link in case browser did not open https://supabase.com/dashboard/cli/login?session_id=4d4fb001-0fa3-4ecb-b14c-08bd46bcae72&token_name=cli_fiachramcvicker@Fiachras-MacBook-Pro.local_1757111028&public_key=04f7c773cd701d79c87415351216da3f3299f31e192bf2f27243ecd9f61575c0666a924c7b5f8124fe14b93f19e0ef5d26577569932ed683e654732de9dbee16e1
+
+Enter your verification code: 5170444c
+Token cli_fiachramcvicker@Fiachras-MacBook-Pro.local_1757111028 created successfully.
+
+You are now logged in. Happy coding!
+fiachramcvicker@Fiachras-MacBook-Pro simple-todo-app-bmad % supabase projects list 
+
+  
+   LINKED | ORG ID                               | REFERENCE ID         | NAME               | REGION            | CREATED AT (UTC)    
+  --------|--------------------------------------|----------------------|--------------------|-------------------|---------------------
+     ●    | vercel_icfg_8TAnjrL6XqjPQC6wvwxecb9F | yxrritixuupcvmnucwop | supabase-rose-book | West EU (Ireland) | 2025-09-04 19:49:04 

@@ -32,8 +32,10 @@ export interface Database {
           id: string
           family_id: string
           user_id: string
+          email: string
           role: 'admin' | 'member'
           display_name: string
+          is_active: boolean
           created_at: string
           updated_at: string
         }
@@ -41,8 +43,10 @@ export interface Database {
           id?: string
           family_id: string
           user_id: string
+          email: string
           role?: 'admin' | 'member'
           display_name: string
+          is_active?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -50,8 +54,10 @@ export interface Database {
           id?: string
           family_id?: string
           user_id?: string
+          email?: string
           role?: 'admin' | 'member'
           display_name?: string
+          is_active?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -63,7 +69,7 @@ export interface Database {
           title: string
           description: string | null
           status: 'pending' | 'in_progress' | 'completed'
-          assigned_to: string | null
+          assignee_id: string | null
           due_date: string | null
           created_by: string
           created_at: string
@@ -75,7 +81,7 @@ export interface Database {
           title: string
           description?: string | null
           status?: 'pending' | 'in_progress' | 'completed'
-          assigned_to?: string | null
+          assignee_id?: string | null
           due_date?: string | null
           created_by: string
           created_at?: string
@@ -87,7 +93,7 @@ export interface Database {
           title?: string
           description?: string | null
           status?: 'pending' | 'in_progress' | 'completed'
-          assigned_to?: string | null
+          assignee_id?: string | null
           due_date?: string | null
           created_by?: string
           created_at?: string
@@ -100,8 +106,9 @@ export interface Database {
           family_id: string
           title: string
           description: string | null
-          start_time: string
-          end_time: string | null
+          start_datetime: string
+          end_datetime: string | null
+          assignee_id: string | null
           created_by: string
           created_at: string
           updated_at: string
@@ -111,8 +118,9 @@ export interface Database {
           family_id: string
           title: string
           description?: string | null
-          start_time: string
-          end_time?: string | null
+          start_datetime: string
+          end_datetime?: string | null
+          assignee_id?: string | null
           created_by: string
           created_at?: string
           updated_at?: string
@@ -122,8 +130,9 @@ export interface Database {
           family_id?: string
           title?: string
           description?: string | null
-          start_time?: string
-          end_time?: string | null
+          start_datetime?: string
+          end_datetime?: string | null
+          assignee_id?: string | null
           created_by?: string
           created_at?: string
           updated_at?: string
